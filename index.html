@@ -1,806 +1,631 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <meta name="description" content="Success Class UI (Split transcripts) + OpenAI Realtime Transcription"/>
-  <meta name="theme-color" content="#0d0d0d"/>
-  <title>Success Class • ORBIT • Split Transcripts</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"/>
+  <meta name="theme-color" content="#0b0b0f"/>
+  <title>Orbit One-to-One Call • Messenger UI</title>
 
-  <!-- Firebase Compat -->
+  <!-- Firebase Compat SDKs (same credentials pattern you used) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
   <style>
     :root{
-      --bg:#0d0d0d;
-      --surface:#141414;
-      --surface2:#1c1c1c;
-      --surface3:#252525;
-      --stroke:rgba(255,255,255,.08);
-      --border:#2b2b2b;
-
-      --text:#f5f5f5;
-      --muted:#9aa0a6;
-
+      --bg:#0b0b0f;
+      --panel:rgba(18,18,24,.78);
+      --panel2:rgba(25,25,34,.72);
+      --stroke:rgba(255,255,255,.10);
+      --text:#f3f4f6;
+      --muted:rgba(243,244,246,.55);
       --accent:#6366f1;
-      --accent2:#4f46e5;
-
+      --cyan:#06b6d4;
       --green:#22c55e;
       --red:#ef4444;
       --yellow:#eab308;
 
-      --safeT: env(safe-area-inset-top, 0px);
-      --safeB: env(safe-area-inset-bottom, 0px);
+      --safeT: env(safe-area-inset-top);
+      --safeB: env(safe-area-inset-bottom);
+      --safeL: env(safe-area-inset-left);
+      --safeR: env(safe-area-inset-right);
 
-      --r:14px;
-      --r2:18px;
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --r: 18px;
     }
 
     *{box-sizing:border-box;margin:0;padding:0}
-    html,body{height:100%}
-    body{
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
-      background:
-        radial-gradient(1200px 520px at 15% -10%, rgba(99,102,241,.18), transparent 55%),
-        radial-gradient(900px 520px at 90% 10%, rgba(99,102,241,.10), transparent 60%),
-        radial-gradient(900px 520px at 55% 110%, rgba(34,197,94,.08), transparent 55%),
-        var(--bg);
-      color:var(--text);
-      overflow:hidden;
-    }
-
-    button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
-    input,select{font:inherit}
-    ::-webkit-scrollbar{width:6px;height:6px}
-    ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:999px}
-    ::-webkit-scrollbar-track{background:transparent}
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif}
+    button,input,select{font:inherit;color:inherit}
+    button{border:none;background:none;cursor:pointer}
+    a{color:inherit;text-decoration:none}
 
     .hidden{display:none !important}
+    .no-scroll{overflow:hidden}
 
-    /* ====== TOP HEADER (matches screenshot vibe) ====== */
-    .topbar{
-      height:56px;
-      padding: calc(10px + var(--safeT)) 14px 10px;
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-      background: rgba(15,15,15,.78);
-      border-bottom:1px solid var(--stroke);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      position:sticky;top:0;z-index:300;
-    }
-    .brand{
-      display:flex;align-items:center;gap:10px;
-      min-width:0;
-    }
-    .brandMark{
-      width:34px;height:34px;border-radius:10px;
-      background:linear-gradient(135deg, rgba(99,102,241,.95), rgba(6,182,212,.65));
-      display:flex;align-items:center;justify-content:center;
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow:0 16px 45px rgba(0,0,0,.45);
-    }
-    .brandTxt{display:flex;flex-direction:column;min-width:0}
-    .brandTxt b{
-      font-size:14px;font-weight:900;letter-spacing:.2px;
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    }
-    .roomPill{
-      display:flex;align-items:center;gap:8px;
-      padding:6px 10px;border-radius:999px;
-      background:rgba(255,255,255,.06);
-      border:1px solid var(--stroke);
-      color:rgba(245,245,245,.86);
-      font-size:12px;font-weight:800;
-    }
-    .roomPill .dot{
-      width:9px;height:9px;border-radius:50%;
-      background:var(--green);
-      box-shadow:0 0 0 4px rgba(34,197,94,.14);
-    }
-    .timerPill{
-      display:flex;align-items:center;gap:10px;
-      padding:6px 12px;border-radius:999px;
-      background:rgba(255,255,255,.06);
-      border:1px solid var(--stroke);
-      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
-      font-size:12px;font-weight:900;
-    }
-    .timerPill .recDot{
-      width:10px;height:10px;border-radius:50%;
-      background:var(--red);
-      animation:blink 1s infinite;
-      box-shadow:0 0 0 4px rgba(239,68,68,.12);
-    }
-    @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
-    .topBtns{display:flex;align-items:center;gap:8px}
-    .iconBtn{
-      width:40px;height:40px;border-radius:12px;
-      background:rgba(255,255,255,.06);
-      border:1px solid var(--stroke);
-      display:flex;align-items:center;justify-content:center;
-      transition:.12s;
-    }
-    .iconBtn:hover{background:rgba(255,255,255,.09)}
-    .iconBtn.danger{background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.35)}
-    .iconBtn.active{background:rgba(99,102,241,.18);border-color:rgba(99,102,241,.32)}
-    .iconBtn:active{transform:translateY(1px)}
-
-    /* ====== APP GRID ====== */
-    .app{
-      height:calc(100% - 56px);
-      display:grid;
-      grid-template-columns: 340px 1fr 340px;
-      grid-template-rows: 1fr 88px;
-      gap:12px;
-      padding:12px 12px calc(12px + var(--safeB));
-    }
-
-    /* Left: Video + Audio levels */
-    .leftCol{
-      grid-column:1;grid-row:1;
-      display:flex;flex-direction:column;gap:12px;
-      min-height:0;
-    }
-    .tile{
-      background:rgba(20,20,20,.78);
-      border:1px solid var(--stroke);
-      border-radius:var(--r2);
-      box-shadow:0 18px 50px rgba(0,0,0,.45);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      overflow:hidden;
-    }
-    .tileH{
-      display:flex;align-items:center;justify-content:space-between;
-      padding:12px 12px;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      background:rgba(255,255,255,.03);
-    }
-    .tileH b{font-size:13px;font-weight:900;display:flex;align-items:center;gap:10px;color:rgba(245,245,245,.92)}
-    .tileH b i{color:rgba(99,102,241,.95)}
-    .tileB{padding:12px}
-    .videoBox{
-      position:relative;
-      width:100%;
-      aspect-ratio: 16/9;
-      border-radius:14px;
-      background:rgba(0,0,0,.35);
-      border:1px solid rgba(255,255,255,.08);
-      overflow:hidden;
-    }
-    .videoBox video{
-      width:100%;height:100%;object-fit:cover;
-      transform:scaleX(-1);
-    }
-    .videoBox .hint{
-      position:absolute;inset:0;
-      display:flex;align-items:center;justify-content:center;
-      color:rgba(245,245,245,.65);
-      font-weight:800;font-size:12px;
-      background:linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,.45));
-      text-align:center;padding:14px;
-    }
-
-    .levels{
-      display:grid;gap:10px;margin-top:12px;
-    }
-    .lvlRow{display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:center}
-    .lvlRow span{font-size:12px;color:rgba(245,245,245,.65);font-weight:900}
-    .bar{
-      height:10px;border-radius:999px;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.08);
-      overflow:hidden;
-    }
-    .bar > i{
-      display:block;height:100%;
-      width:0%;
-      background:linear-gradient(90deg, rgba(34,197,94,.85), rgba(99,102,241,.75));
-      border-radius:999px;
-      transition: width .08s linear;
-    }
-
-    /* Center: Transcripts panel (like screenshot) */
-    .centerCol{
-      grid-column:2;grid-row:1;
-      min-width:0;min-height:0;
-      display:flex;flex-direction:column;
-      background:rgba(20,20,20,.78);
-      border:1px solid var(--stroke);
-      border-radius:var(--r2);
-      overflow:hidden;
-      box-shadow:0 18px 50px rgba(0,0,0,.45);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
-    .centerTop{
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-      padding:12px 14px;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      background:rgba(255,255,255,.03);
-    }
-    .centerTop .left{
-      display:flex;align-items:center;gap:12px;min-width:0;
-    }
-    .centerTop .title{
-      display:flex;align-items:center;gap:10px;
-      font-weight:950;font-size:14px;
-      white-space:nowrap;
-    }
-    .centerTop .title i{color:rgba(99,102,241,.95)}
-    .autoPill{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:6px 10px;border-radius:999px;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.10);
-      font-size:12px;font-weight:900;color:rgba(245,245,245,.86);
-    }
-    .autoPill.active{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.32)}
-    .splitTabs{
-      display:flex;align-items:center;gap:6px;
-      padding:4px;
-      background:rgba(255,255,255,.05);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:999px;
-    }
-    .splitTabs button{
-      padding:6px 10px;border-radius:999px;
-      font-size:12px;font-weight:900;color:rgba(245,245,245,.65);
-      background:transparent;
-    }
-    .splitTabs button.active{background:rgba(99,102,241,.22);color:#fff}
-
-    .controlsRow{
-      padding:12px 14px;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      display:grid;
-      grid-template-columns: 1.2fr 1fr 1fr;
-      gap:12px;
-      background:rgba(255,255,255,.02);
-    }
-    .field{
-      display:flex;flex-direction:column;gap:7px;
-      min-width:0;
-    }
-    .field label{
-      font-size:11px;font-weight:900;color:rgba(245,245,245,.55);
-      display:flex;align-items:center;gap:8px;
-    }
-    .field label i{color:rgba(245,245,245,.45)}
-    .field select{
-      width:100%;
-      padding:10px 10px;
-      border-radius:12px;
-      background:rgba(0,0,0,.30);
-      border:1px solid rgba(255,255,255,.10);
-      color:rgba(245,245,245,.92);
-      outline:none;
-    }
-    .field select:focus{border-color:rgba(99,102,241,.45);box-shadow:0 0 0 4px rgba(99,102,241,.14)}
-    .field select option{color:#111}
-
-    .transBody{
-      flex:1;min-height:0;
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:0;
-      overflow:hidden;
-    }
-    .col{
-      min-width:0;min-height:0;
-      display:flex;flex-direction:column;
-    }
-    .col:first-child{border-right:1px solid rgba(255,255,255,.06)}
-    .colH{
-      padding:10px 14px;
-      font-size:11px;font-weight:1000;
-      letter-spacing:.9px;
-      text-transform:uppercase;
-      color:rgba(245,245,245,.48);
-      background:rgba(255,255,255,.02);
-      border-bottom:1px solid rgba(255,255,255,.06);
-    }
-    .colB{
-      flex:1;min-height:0;
-      overflow:auto;
-      padding:12px 14px;
-    }
-    .line{
-      padding:12px 0;
-      border-bottom:1px solid rgba(255,255,255,.06);
-    }
-    .line:last-child{border-bottom:none}
-    .lineTop{
-      display:flex;align-items:center;gap:10px;
-      margin-bottom:8px;
-      color:rgba(245,245,245,.70);
-      font-size:12px;font-weight:900;
-    }
-    .badge{
-      width:22px;height:22px;border-radius:999px;
-      background:rgba(99,102,241,.22);
-      border:1px solid rgba(99,102,241,.32);
-      display:flex;align-items:center;justify-content:center;
-      font-size:11px;font-weight:1000;
-      color:#fff;
-    }
-    .who{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
-    .time{margin-left:auto;color:rgba(245,245,245,.35);font-weight:900}
-    .txt{
-      font-size:14px;line-height:1.45;
-      color:rgba(245,245,245,.92);
-      font-weight:800;
-      word-wrap:break-word;
-    }
-    .empty{
-      padding:40px 0;
-      text-align:center;
-      color:rgba(245,245,245,.45);
-      font-weight:900;
-    }
-
-    /* Right: Participants panel (always visible on desktop like screenshot) */
-    .rightCol{
-      grid-column:3;grid-row:1;
-      min-height:0;
-      display:flex;flex-direction:column;
-      background:rgba(20,20,20,.78);
-      border:1px solid var(--stroke);
-      border-radius:var(--r2);
-      overflow:hidden;
-      box-shadow:0 18px 50px rgba(0,0,0,.45);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
-    .rightTop{
-      padding:12px 14px;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      background:rgba(255,255,255,.03);
-      display:flex;align-items:center;justify-content:space-between;
-    }
-    .rightTop b{
-      font-size:14px;font-weight:950;display:flex;align-items:center;gap:10px;
-    }
-    .rightTop b i{color:rgba(99,102,241,.95)}
-    .rightBody{flex:1;min-height:0;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:12px}
-    .sectionTitle{
-      font-size:12px;font-weight:1000;letter-spacing:.8px;
-      color:rgba(245,245,245,.45);
-      text-transform:uppercase;
-      margin-top:2px;
-    }
-    .queueBox{
-      padding:14px;border-radius:14px;
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.08);
-      color:rgba(245,245,245,.55);
-      font-weight:900;font-size:13px;
-    }
-    .pList{display:flex;flex-direction:column;gap:10px}
-    .pItem{
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-      padding:12px;border-radius:14px;
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.08);
-    }
-    .pLeft{display:flex;align-items:center;gap:12px;min-width:0}
-    .pAvatar{
-      width:42px;height:42px;border-radius:999px;
-      background:rgba(99,102,241,.22);
-      border:1px solid rgba(99,102,241,.32);
-      display:flex;align-items:center;justify-content:center;
-      font-weight:1000;
-    }
-    .pMeta{min-width:0}
-    .pName{font-weight:950;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .pSub{margin-top:3px;font-size:11px;color:rgba(245,245,245,.55);font-weight:900;display:flex;align-items:center;gap:6px}
-    .pSub .onlineDot{width:7px;height:7px;border-radius:50%;background:var(--green)}
-    .pBadges{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
-    .pill{
-      padding:4px 8px;border-radius:999px;
-      font-size:10px;font-weight:1000;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.22);
-      color:rgba(245,245,245,.78);
-    }
-    .pill.muted{border-color:rgba(239,68,68,.26);background:rgba(239,68,68,.12)}
-    .pill.teacher{border-color:rgba(99,102,241,.28);background:rgba(99,102,241,.14);color:#fff}
-    .pill.hand{border-color:rgba(234,179,8,.28);background:rgba(234,179,8,.12);color:#fff}
-
-    /* ====== BOTTOM ZOOM BAR ====== */
-    .bottomBar{
-      grid-column:1 / 4;
-      grid-row:2;
-      height:88px;
-      display:flex;align-items:center;justify-content:center;
-      background: rgba(16,16,16,.78);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:var(--r2);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      overflow:hidden;
-    }
-    .dock{
-      width:100%;
-      display:flex;align-items:center;justify-content:space-between;
-      padding:10px 14px;
-      gap:10px;
-    }
-    .dockLeft,.dockMid,.dockRight{display:flex;align-items:center;gap:10px}
-    .dockMid{flex:1;justify-content:center;gap:16px}
-    .dockBtn{
-      width:74px;
-      display:flex;flex-direction:column;align-items:center;gap:8px;
-      padding:10px 10px;border-radius:16px;
-      background:rgba(255,255,255,.05);
-      border:1px solid rgba(255,255,255,.08);
-      transition:.12s;
-      user-select:none;
-    }
-    .dockBtn i{font-size:18px}
-    .dockBtn span{font-size:11px;font-weight:1000;color:rgba(245,245,245,.70)}
-    .dockBtn:active{transform:translateY(1px)}
-    .dockBtn.active{background:rgba(99,102,241,.18);border-color:rgba(99,102,241,.30)}
-    .dockBtn.danger{background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.34)}
-    .dockBtn.muted{background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.26)}
-    .dockBtn .dotRec{
-      width:10px;height:10px;border-radius:50%;
-      background:var(--red);
-      display:inline-block;
-      box-shadow:0 0 0 4px rgba(239,68,68,.12);
-      animation:blink 1s infinite;
-    }
-
-    /* ====== Prejoin ====== */
-    .prejoin{
-      position:fixed;inset:0;
-      display:flex;align-items:center;justify-content:center;
-      padding:18px;
-      z-index:500;
+    /* ========= Background ========= */
+    .bg{
+      position:fixed;inset:0;z-index:-1;
       background:
-        radial-gradient(1200px 520px at 15% -10%, rgba(99,102,241,.22), transparent 55%),
-        radial-gradient(900px 520px at 90% 10%, rgba(6,182,212,.14), transparent 60%),
-        radial-gradient(900px 520px at 55% 110%, rgba(34,197,94,.10), transparent 55%),
+        radial-gradient(1200px 700px at 15% -10%, rgba(99,102,241,.25), transparent 55%),
+        radial-gradient(900px 600px at 88% 10%, rgba(6,182,212,.18), transparent 60%),
+        radial-gradient(900px 600px at 50% 110%, rgba(34,197,94,.10), transparent 55%),
         var(--bg);
     }
-    .pjCard{
-      width:min(980px, 100%);
-      background:rgba(18,18,18,.76);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:22px;
-      overflow:hidden;
-      box-shadow:0 26px 70px rgba(0,0,0,.55);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      display:grid;
-      grid-template-columns: 1.2fr 1fr;
-      gap:0;
+
+    /* ========= Loading / Toast ========= */
+    .loading{
+      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      padding:24px;background:rgba(0,0,0,.55);z-index:50;
+      -webkit-backdrop-filter: blur(14px);backdrop-filter: blur(14px);
     }
-    .pjLeft{
-      padding:18px;
-      border-right:1px solid rgba(255,255,255,.08);
-      background:
-        radial-gradient(900px 420px at 15% 10%, rgba(99,102,241,.16), transparent 55%),
-        rgba(0,0,0,.22);
+    .loadingCard{
+      width:min(520px,92vw);border-radius:24px;background:rgba(18,18,24,.82);
+      border:1px solid var(--stroke);box-shadow:var(--shadow);
+      padding:18px 18px 16px;
     }
-    .pjRight{padding:18px}
-    .pjTitle{display:flex;align-items:center;gap:12px;margin-bottom:10px}
-    .pjTitle .mk{
-      width:40px;height:40px;border-radius:14px;
-      background:linear-gradient(135deg, rgba(99,102,241,.95), rgba(6,182,212,.65));
+    .loadingHead{display:flex;align-items:center;gap:12px}
+    .loadingIcon{
+      width:44px;height:44px;border-radius:14px;
+      background:linear-gradient(135deg,var(--accent),var(--cyan));
       display:flex;align-items:center;justify-content:center;
-      border:1px solid rgba(255,255,255,.14);
-      box-shadow:0 16px 45px rgba(0,0,0,.45);
     }
-    .pjTitle b{font-size:16px;font-weight:950}
-    .pjTitle span{display:block;margin-top:2px;color:rgba(245,245,245,.55);font-weight:900;font-size:12px}
-    .pjGrid{display:grid;gap:12px;margin-top:14px}
-    .pjField label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:950;color:rgba(245,245,245,.60);margin-bottom:7px}
-    .pjField input,.pjField select{
-      width:100%;
-      padding:12px 12px;border-radius:14px;
-      background:rgba(0,0,0,.25);
-      border:1px solid rgba(255,255,255,.10);
-      color:rgba(245,245,245,.92);
+    .loadingTitle{font-weight:800;font-size:15px;letter-spacing:.2px}
+    .loadingMsg{margin-top:10px;color:var(--muted);font-size:13px;line-height:1.45}
+    .loadingActions{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap}
+    .pill{
+      padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);
+      border:1px solid var(--stroke);font-weight:700;font-size:13px;
+    }
+    .pill.primary{background:linear-gradient(135deg,var(--accent),var(--cyan));border:none}
+    .pill.danger{background:rgba(239,68,68,.16);border:1px solid rgba(239,68,68,.28);color:#fff}
+    .pill:active{transform:translateY(1px)}
+
+    .toast{
+      position:fixed;left:50%;transform:translateX(-50%);
+      bottom:calc(92px + var(--safeB));
+      background:rgba(18,18,24,.82);border:1px solid var(--stroke);
+      -webkit-backdrop-filter: blur(14px);backdrop-filter: blur(14px);
+      padding:12px 14px;border-radius:14px;box-shadow:var(--shadow);
+      font-size:13px;color:rgba(243,244,246,.92);
+      display:none;z-index:60;max-width:92vw;text-align:center;
+    }
+    .toast.show{display:block;animation:toastUp .18s ease-out}
+    @keyframes toastUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+    /* ========= Prejoin ========= */
+    .prejoin{
+      min-height:100vh;min-height:100dvh;
+      display:flex;align-items:center;justify-content:center;
+      padding:calc(18px + var(--safeT)) 18px calc(18px + var(--safeB));
+    }
+    .card{
+      width:min(540px,94vw);
+      border-radius:28px;
+      background:rgba(18,18,24,.78);
+      border:1px solid var(--stroke);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .cardTop{
+      padding:16px 16px 10px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      background:rgba(255,255,255,.03);
+      border-bottom:1px solid var(--stroke);
+    }
+    .brand{
+      display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.2px
+    }
+    .brandIcon{
+      width:38px;height:38px;border-radius:14px;
+      background:linear-gradient(135deg,var(--accent),var(--cyan));
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 12px 30px rgba(0,0,0,.35);
+    }
+    .brandSub{font-size:12px;color:var(--muted);font-weight:700;margin-top:2px}
+    .cardBody{padding:14px 16px 16px}
+    .row{display:flex;gap:10px}
+    .col{flex:1}
+    .label{font-size:12px;color:var(--muted);font-weight:800;margin:10px 0 6px;display:flex;align-items:center;gap:8px}
+    .field{
+      width:100%;padding:12px 12px;border-radius:14px;
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--stroke);
       outline:none;
     }
-    .pjField input:focus,.pjField select:focus{border-color:rgba(99,102,241,.45);box-shadow:0 0 0 4px rgba(99,102,241,.14)}
-    .pjActions{display:flex;gap:10px;margin-top:14px}
-    .pjBtn{
-      flex:1;
-      padding:12px 14px;border-radius:14px;
+    .field:focus{border-color:rgba(99,102,241,.55);box-shadow:0 0 0 4px rgba(99,102,241,.16)}
+    .seg{
+      display:flex;gap:8px;margin-top:12px;
+      background:rgba(255,255,255,.04);border:1px solid var(--stroke);
+      border-radius:16px;padding:6px;
+    }
+    .seg button{
+      flex:1;padding:10px 10px;border-radius:12px;
+      font-weight:900;font-size:13px;color:rgba(243,244,246,.75);
+    }
+    .seg button.active{
+      background:linear-gradient(135deg, rgba(99,102,241,.35), rgba(6,182,212,.22));
+      border:1px solid rgba(255,255,255,.10);
+      color:#fff;
+    }
+
+    .hint{
+      margin-top:10px;padding:10px 12px;border-radius:14px;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--stroke);
+      color:rgba(243,244,246,.70);
+      font-size:12px;line-height:1.45;
+    }
+
+    .actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+    .actions .pill{flex:1;text-align:center;min-width:140px}
+
+    .shareLine{
+      margin-top:10px;display:flex;gap:8px;align-items:center;
+    }
+    .shareLine .field{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .iconBtn{
+      width:44px;height:44px;border-radius:14px;
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--stroke);
+      display:flex;align-items:center;justify-content:center;
+    }
+    .iconBtn:active{transform:translateY(1px)}
+
+    /* ========= Call Screen (Messenger-like) ========= */
+    .call{
+      position:fixed;inset:0;
+      display:flex;flex-direction:column;
+      padding:var(--safeT) var(--safeR) var(--safeB) var(--safeL);
+      background:transparent;
+    }
+
+    /* Top bar */
+    .topBar{
+      position:sticky;top:0;z-index:20;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 14px;
+      background:rgba(18,18,24,.62);
+      border-bottom:1px solid var(--stroke);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+    }
+    .peer{
+      display:flex;align-items:center;gap:10px;min-width:0;
+    }
+    .avatar{
+      width:40px;height:40px;border-radius:999px;
+      background:linear-gradient(135deg,var(--accent),var(--cyan));
+      display:flex;align-items:center;justify-content:center;
+      font-weight:1000;
+      box-shadow:0 12px 30px rgba(0,0,0,.35);
+      flex:0 0 auto;
+    }
+    .peerInfo{min-width:0}
+    .peerName{font-weight:1000;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .peerStatus{margin-top:2px;font-size:12px;color:rgba(243,244,246,.60);font-weight:800}
+    .topBtns{display:flex;gap:8px}
+    .topBtn{
+      width:42px;height:42px;border-radius:14px;
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--stroke);
+      display:flex;align-items:center;justify-content:center;
+      font-size:16px;
+    }
+    .topBtn.active{
+      background:rgba(99,102,241,.18);
+      border:1px solid rgba(99,102,241,.28);
+      color:#fff;
+    }
+
+    /* Video stage */
+    .stage{
+      position:relative;flex:1;min-height:0;
+      display:flex;align-items:center;justify-content:center;
+      padding:10px 10px 0;
+    }
+    .remoteWrap{
+      position:relative;
+      width:100%;
+      height:100%;
+      border-radius:24px;
+      overflow:hidden;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--stroke);
+      box-shadow:0 18px 60px rgba(0,0,0,.55);
+    }
+    video{background:#000}
+    #remoteVideo{
+      width:100%;height:100%;object-fit:cover;
+    }
+
+    .localPip{
+      position:absolute;
+      right:14px; top:14px;
+      width:32vw; max-width:150px; min-width:110px;
+      aspect-ratio:3/4;
+      border-radius:18px;
+      overflow:hidden;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:0 18px 50px rgba(0,0,0,.55);
+      z-index:10;
+    }
+    #localVideo{
+      width:100%;height:100%;object-fit:cover;transform:scaleX(-1);
+    }
+
+    .badge{
+      position:absolute;left:14px;top:14px;z-index:12;
+      padding:8px 10px;border-radius:999px;
+      background:rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.12);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      font-size:12px;font-weight:900;color:rgba(243,244,246,.92);
+      display:flex;align-items:center;gap:8px;
+    }
+    .dot{
+      width:9px;height:9px;border-radius:50%;
+      background:var(--red);
+      box-shadow:0 0 0 4px rgba(239,68,68,.18);
+      animation:blink 1.1s infinite;
+    }
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+
+    /* Captions overlay (messenger style) */
+    .captions{
+      position:absolute;
+      left:10px; right:10px;
+      bottom:12px;
+      z-index:12;
+      display:flex;flex-direction:column;
+      gap:8px;
+      max-height:38vh;
+      padding:10px 10px;
+      border-radius:22px;
+      background:rgba(18,18,24,.62);
+      border:1px solid rgba(255,255,255,.10);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      overflow:auto;
+      scroll-behavior:smooth;
+    }
+    .capRow{
+      display:flex;
+    }
+    .capRow.mine{justify-content:flex-end}
+    .bubble{
+      max-width:82%;
+      padding:10px 12px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.06);
+      box-shadow:0 10px 26px rgba(0,0,0,.25);
+    }
+    .capRow.mine .bubble{
+      background:linear-gradient(135deg, rgba(99,102,241,.38), rgba(6,182,212,.22));
+      border:1px solid rgba(255,255,255,.12);
+    }
+    .bubbleTop{
+      display:flex;align-items:center;gap:8px;margin-bottom:6px;
+      color:rgba(243,244,246,.75);font-size:11px;font-weight:900;
+    }
+    .bubbleTop .t{margin-left:auto;color:rgba(243,244,246,.55)}
+    .orig{font-size:13px;line-height:1.35;color:rgba(243,244,246,.92);font-weight:800}
+    .tran{margin-top:6px;font-size:13px;line-height:1.35;color:rgba(243,244,246,.86);font-weight:800;opacity:.95}
+    .tran small{display:inline-block;margin-right:6px;color:rgba(243,244,246,.55);font-weight:900;font-size:11px}
+
+    /* Bottom bar (Messenger-ish) */
+    .bottomBar{
+      position:sticky;bottom:0;z-index:25;
+      padding:10px 12px calc(12px + var(--safeB));
+    }
+    .dock{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:10px;
+      padding:10px 10px;
+      border-radius:999px;
+      background:rgba(18,18,24,.72);
+      border:1px solid rgba(255,255,255,.10);
+      -webkit-backdrop-filter: blur(18px);
+      backdrop-filter: blur(18px);
+      box-shadow:0 18px 55px rgba(0,0,0,.55);
+      overflow-x:auto;
+      scrollbar-width:none;
+      -webkit-overflow-scrolling:touch;
+    }
+    .dock::-webkit-scrollbar{display:none}
+    .dockBtn{
+      width:54px;height:54px;border-radius:999px;
+      display:flex;align-items:center;justify-content:center;
       background:rgba(255,255,255,.06);
       border:1px solid rgba(255,255,255,.10);
-      font-weight:950;
-      transition:.12s;
+      flex:0 0 auto;
+      font-size:18px;
     }
-    .pjBtn.primary{
-      background:linear-gradient(135deg, rgba(99,102,241,.95), rgba(6,182,212,.65));
-      border-color:rgba(255,255,255,.14);
+    .dockBtn:active{transform:translateY(1px)}
+    .dockBtn.on{
+      background:rgba(34,197,94,.16);
+      border:1px solid rgba(34,197,94,.28);
     }
-    .pjBtn:active{transform:translateY(1px)}
-    .pjNote{margin-top:10px;color:rgba(245,245,245,.50);font-weight:900;font-size:12px;line-height:1.45}
+    .dockBtn.off{
+      background:rgba(239,68,68,.16);
+      border:1px solid rgba(239,68,68,.28);
+    }
+    .dockBtn.primary{
+      background:linear-gradient(135deg, rgba(99,102,241,.45), rgba(6,182,212,.22));
+      border:1px solid rgba(255,255,255,.12);
+    }
+    .dockBtn.hang{
+      background:rgba(239,68,68,.22);
+      border:1px solid rgba(239,68,68,.35);
+    }
 
-    /* Expand mode */
-    .expanded .app{
-      grid-template-columns: 280px 1fr 0px;
+    /* Translator Sheet */
+    .sheetOverlay{
+      position:fixed;inset:0;z-index:40;display:none;
+      background:rgba(0,0,0,.52);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      align-items:flex-end;justify-content:center;
+      padding:12px;
     }
-    .expanded .rightCol{display:none}
+    .sheetOverlay.open{display:flex}
+    .sheet{
+      width:min(680px,100%);
+      border-radius:26px;
+      background:rgba(18,18,24,.88);
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .sheetHead{
+      padding:14px 14px;
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.03);
+    }
+    .sheetTitle{font-weight:1000;font-size:14px}
+    .sheetClose{
+      width:40px;height:40px;border-radius:14px;
+      background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);
+      display:flex;align-items:center;justify-content:center;
+    }
+    .sheetBody{padding:14px}
+    .sheetGrid{display:grid;grid-template-columns:1fr;gap:10px}
+    .toggleRow{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:12px;border-radius:18px;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .toggleRow .left{display:flex;flex-direction:column;gap:3px}
+    .toggleRow .left b{font-size:13px}
+    .toggleRow .left span{font-size:12px;color:rgba(243,244,246,.62);font-weight:700}
+    .switch{
+      width:52px;height:30px;border-radius:999px;background:rgba(255,255,255,.12);
+      position:relative;border:1px solid rgba(255,255,255,.12);
+    }
+    .switch::after{
+      content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:999px;
+      background:#fff;transition:.18s;
+    }
+    .switch.on{background:rgba(34,197,94,.25);border-color:rgba(34,197,94,.35)}
+    .switch.on::after{left:25px}
 
-    /* ====== Responsive ====== */
-    @media (max-width: 1100px){
-      .app{grid-template-columns: 300px 1fr 300px}
-    }
-    @media (max-width: 980px){
-      .pjCard{grid-template-columns:1fr}
-      .pjLeft{border-right:none;border-bottom:1px solid rgba(255,255,255,.08)}
-
-      .app{
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr 88px;
-      }
-      .leftCol{grid-column:1;grid-row:1}
-      .centerCol{grid-column:1;grid-row:2}
-      .rightCol{grid-column:1;grid-row:2;display:none}
-      .bottomBar{grid-column:1;grid-row:3}
-      .controlsRow{grid-template-columns:1fr}
-      .transBody{grid-template-columns:1fr}
-      .col:first-child{border-right:none;border-bottom:1px solid rgba(255,255,255,.06)}
-    }
+    .note{margin-top:10px;color:rgba(243,244,246,.62);font-size:12px;line-height:1.45}
   </style>
 </head>
 
 <body>
+  <div class="bg"></div>
 
-  <!-- PREJOIN -->
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="loadingCard">
+      <div class="loadingHead">
+        <div class="loadingIcon"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+        <div>
+          <div class="loadingTitle" id="loadingTitle">Starting…</div>
+          <div class="brandSub" id="loadingSub">Connecting services</div>
+        </div>
+      </div>
+      <div class="loadingMsg" id="loadingMsg">Please wait.</div>
+      <div class="loadingActions" id="loadingActions">
+        <button class="pill primary" id="btnReload">Reload</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prejoin -->
   <div class="prejoin" id="prejoin">
-    <div class="pjCard">
-      <div class="pjLeft">
-        <div class="pjTitle">
-          <div class="mk"><i class="fa-solid fa-graduation-cap"></i></div>
+    <div class="card">
+      <div class="cardTop">
+        <div class="brand">
+          <div class="brandIcon"><i class="fa-solid fa-message"></i></div>
           <div>
-            <b>Success Class</b>
-            <span>Split transcript UI • OpenAI Realtime STT</span>
+            <div>Orbit One-to-One</div>
+            <div class="brandSub">Messenger UI • WebRTC • Live captions</div>
           </div>
         </div>
-
-        <div class="videoBox" style="margin-top:10px;">
-          <video id="previewVideo" autoplay muted playsinline></video>
-          <div class="hint" id="previewHint">Camera preview (optional). Join to start STT from mic.</div>
-        </div>
-
-        <div class="pjNote">
-          This build matches the screenshot layout: left video + audio meter, center split transcripts, right participants panel, and a Zoom-like bottom bar.
-        </div>
+        <button class="iconBtn" id="btnSignOut" title="Sign out"><i class="fa-solid fa-right-from-bracket"></i></button>
       </div>
 
-      <div class="pjRight">
-        <div class="pjGrid">
-          <div class="pjField">
-            <label><i class="fa-solid fa-user"></i> Display name</label>
-            <input id="pjName" placeholder="Master E" maxlength="40"/>
-          </div>
+      <div class="cardBody">
+        <div class="seg" role="tablist" aria-label="Mode">
+          <button id="tabCreate" class="active"><i class="fa-solid fa-plus"></i>&nbsp;&nbsp;Create</button>
+          <button id="tabJoin"><i class="fa-solid fa-link"></i>&nbsp;&nbsp;Join</button>
+        </div>
 
-          <div class="pjField">
-            <label><i class="fa-solid fa-hashtag"></i> Room</label>
-            <input id="pjRoom" placeholder="ORBIT" maxlength="32" value="ORBIT"/>
-          </div>
+        <div class="label"><i class="fa-solid fa-user"></i> Display name</div>
+        <input class="field" id="displayName" placeholder="Your name" maxlength="40"/>
 
-          <div class="pjField">
-            <label><i class="fa-solid fa-microphone"></i> Audio source</label>
-            <select id="pjMic"></select>
+        <div class="row">
+          <div class="col">
+            <div class="label"><i class="fa-solid fa-language"></i> My subtitle language</div>
+            <select class="field" id="langSelect"></select>
           </div>
+          <div class="col">
+            <div class="label"><i class="fa-solid fa-camera"></i> Camera</div>
+            <select class="field" id="camSelect"></select>
+          </div>
+        </div>
 
-          <div class="pjField">
-            <label><i class="fa-solid fa-wave-square"></i> STT source language</label>
-            <select id="pjSttLang"></select>
+        <div class="row">
+          <div class="col">
+            <div class="label"><i class="fa-solid fa-microphone"></i> Microphone</div>
+            <select class="field" id="micSelect"></select>
           </div>
+          <div class="col">
+            <div class="label"><i class="fa-solid fa-volume-high"></i> Speaker</div>
+            <select class="field" id="spkSelect"></select>
+          </div>
+        </div>
 
-          <div class="pjField">
-            <label><i class="fa-solid fa-language"></i> Translation target language</label>
-            <select id="pjTargetLang"></select>
-          </div>
+        <div id="joinBlock" class="hidden">
+          <div class="label"><i class="fa-solid fa-hashtag"></i> Call ID</div>
+          <input class="field" id="callIdInput" placeholder="Enter call ID (e.g. A1B2C3)" maxlength="12"/>
+        </div>
 
-          <div class="pjField">
-            <label><i class="fa-solid fa-key"></i> OpenAI API key (Realtime STT + translation)</label>
-            <input id="pjOpenAI" type="password" placeholder="sk-..." />
+        <div id="createBlock">
+          <div class="label"><i class="fa-solid fa-hashtag"></i> Generated Call ID</div>
+          <div class="shareLine">
+            <input class="field" id="callIdOut" readonly value="—"/>
+            <button class="iconBtn" id="btnCopy" title="Copy"><i class="fa-solid fa-copy"></i></button>
+            <button class="iconBtn" id="btnShare" title="Share"><i class="fa-solid fa-share-nodes"></i></button>
           </div>
+          <div class="hint">
+            Share the Call ID to the other person. They open this page and tap <b>Join</b>, then paste the ID.
+          </div>
+        </div>
 
-          <div class="pjActions">
-            <button class="pjBtn" id="pjCheck"><i class="fa-solid fa-headset"></i> Check devices</button>
-            <button class="pjBtn primary" id="pjJoin"><i class="fa-solid fa-plug-circle-bolt"></i> Enter classroom</button>
-          </div>
+        <div class="actions">
+          <button class="pill primary" id="btnStart"><i class="fa-solid fa-video"></i>&nbsp;&nbsp;Start Call</button>
+          <button class="pill" id="btnPreview"><i class="fa-solid fa-eye"></i>&nbsp;&nbsp;Preview Devices</button>
+        </div>
 
-          <div class="pjNote">
-            Open in two tabs/devices with the same room to see participants populate via Firebase presence.
-            Captions starts OpenAI Realtime STT from your mic and renders into the split columns.
-          </div>
+        <div class="hint" id="authHint">
+          Firebase anonymous session is used. You can still re-use your existing auth.html flow later if you want.
         </div>
       </div>
     </div>
   </div>
 
-  <!-- TOP HEADER -->
-  <div class="topbar">
-    <div class="brand">
-      <div class="brandMark"><i class="fa-solid fa-s"></i></div>
-      <div class="brandTxt">
-        <b>Success Class</b>
+  <!-- Call Screen -->
+  <div class="call hidden" id="callScreen">
+    <div class="topBar">
+      <div class="peer">
+        <div class="avatar" id="peerAvatar">?</div>
+        <div class="peerInfo">
+          <div class="peerName" id="peerName">Waiting for peer…</div>
+          <div class="peerStatus" id="peerStatus">Connecting</div>
+        </div>
       </div>
-      <div class="roomPill">
-        <span id="roomNamePill">ORBIT</span>
-        <span class="dot"></span>
-        <span id="pCount">1</span>
+      <div class="topBtns">
+        <button class="topBtn" id="btnTranslator" title="Translator">
+          <i class="fa-solid fa-language"></i>
+        </button>
+        <button class="topBtn" id="btnToggleCaptions" title="Captions">
+          <i class="fa-solid fa-closed-captioning"></i>
+        </button>
       </div>
     </div>
 
-    <div class="timerPill" title="Session timer">
-      <span class="recDot"></span>
-      <span id="timer">00:00</span>
-    </div>
+    <div class="stage">
+      <div class="remoteWrap">
+        <div class="badge" id="callBadge"><span class="dot"></span><span id="callTimer">00:00</span></div>
 
-    <div class="topBtns">
-      <button class="iconBtn active" id="btnCC" title="Captions"><i class="fa-regular fa-closed-captioning"></i></button>
-      <button class="iconBtn danger" id="btnLeaveTop" title="Leave"><i class="fa-solid fa-right-from-bracket"></i></button>
-      <button class="iconBtn" id="btnMenu" title="Menu"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-    </div>
-  </div>
+        <video id="remoteVideo" autoplay playsinline></video>
 
-  <!-- APP -->
-  <div class="app" id="app">
-    <!-- LEFT -->
-    <div class="leftCol">
-      <div class="tile">
-        <div class="tileH">
-          <b><i class="fa-solid fa-video"></i> Teacher</b>
-          <span class="pill" id="sttStatePill"><i class="fa-solid fa-wave-square"></i> STT idle</span>
+        <div class="localPip">
+          <video id="localVideo" autoplay muted playsinline></video>
         </div>
-        <div class="tileB">
-          <div class="videoBox">
-            <video id="teacherVideo" autoplay muted playsinline></video>
-            <div class="hint" id="teacherHint">Local camera tile (optional). STT uses mic selected in “Audio source”.</div>
-          </div>
 
-          <div class="levels">
-            <div class="lvlRow">
-              <span>Mic</span>
-              <div class="bar"><i id="micBar"></i></div>
-            </div>
-            <div class="lvlRow">
-              <span>Output</span>
-              <div class="bar"><i id="outBar"></i></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="tile">
-        <div class="tileH">
-          <b><i class="fa-solid fa-sliders"></i> Quick</b>
-          <span class="pill"><i class="fa-solid fa-shield"></i> Presence</span>
-        </div>
-        <div class="tileB" style="display:grid;gap:10px;">
-          <div style="color:rgba(245,245,245,.62);font-weight:900;font-size:12px;line-height:1.45;">
-            • Participants list is driven by Firebase RTDB presence.<br/>
-            • “Caption” starts/stops OpenAI Realtime STT (mic → realtime WS).<br/>
-            • Split view shows Original + Translation columns like the screenshot.
-          </div>
+        <div class="captions hidden" id="captions">
+          <!-- caption bubbles injected -->
         </div>
       </div>
     </div>
 
-    <!-- CENTER -->
-    <div class="centerCol">
-      <div class="centerTop">
-        <div class="left">
-          <div class="title"><i class="fa-solid fa-file-lines"></i> Transcripts</div>
-          <button class="autoPill" id="btnAutoPlay"><i class="fa-solid fa-volume-high"></i> Auto</button>
-        </div>
-
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div class="splitTabs" id="viewTabs">
-            <button class="active" data-view="split">Split</button>
-            <button data-view="unified">Unified</button>
-          </div>
-          <button class="iconBtn" id="btnExpand" title="Expand"><i class="fa-solid fa-expand"></i></button>
-        </div>
-      </div>
-
-      <div class="controlsRow">
-        <div class="field">
-          <label><i class="fa-solid fa-microphone"></i> Audio source</label>
-          <select id="audioSource"></select>
-        </div>
-        <div class="field">
-          <label><i class="fa-solid fa-wave-square"></i> STT Source Language</label>
-          <select id="sttLang"></select>
-        </div>
-        <div class="field">
-          <label><i class="fa-solid fa-language"></i> Translation Target Language</label>
-          <select id="targetLang"></select>
-        </div>
-      </div>
-
-      <!-- Split Columns -->
-      <div class="transBody" id="splitBody">
-        <div class="col">
-          <div class="colH">Original</div>
-          <div class="colB" id="origCol">
-            <div class="empty" id="emptyOrig">Waiting for speech…</div>
-          </div>
-        </div>
-        <div class="col">
-          <div class="colH">Translation</div>
-          <div class="colB" id="tranCol">
-            <div class="empty" id="emptyTran">Translations appear here…</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Unified -->
-      <div class="transBody hidden" id="unifiedBody" style="grid-template-columns:1fr;">
-        <div class="col" style="border-right:none;">
-          <div class="colH">Unified</div>
-          <div class="colB" id="unifiedCol">
-            <div class="empty" id="emptyUni">Waiting for speech…</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- RIGHT -->
-    <div class="rightCol">
-      <div class="rightTop">
-        <b><i class="fa-solid fa-users"></i> Participants</b>
-        <span class="pill" id="langPill"><i class="fa-solid fa-language"></i> <span id="langLabel">—</span></span>
-      </div>
-
-      <div class="rightBody">
-        <div class="sectionTitle">Raise hand queue</div>
-        <div class="queueBox" id="handQueue">No hands raised<br/><span style="color:rgba(245,245,245,.35);font-weight:900;font-size:12px;">Queue is empty</span></div>
-
-        <div class="sectionTitle" style="margin-top:6px;">All students</div>
-        <div class="pList" id="participantsList"></div>
-      </div>
-    </div>
-
-    <!-- BOTTOM BAR -->
     <div class="bottomBar">
       <div class="dock">
-        <div class="dockLeft">
-          <div class="timerPill" style="background:rgba(255,255,255,.05)">
-            <span class="recDot"></span>
-            <span id="timer2">00:00</span>
+        <button class="dockBtn on" id="btnMic" title="Mute">
+          <i class="fa-solid fa-microphone"></i>
+        </button>
+        <button class="dockBtn on" id="btnCam" title="Video">
+          <i class="fa-solid fa-video"></i>
+        </button>
+        <button class="dockBtn" id="btnFlip" title="Flip camera">
+          <i class="fa-solid fa-rotate"></i>
+        </button>
+        <button class="dockBtn primary" id="btnCaptionsDock" title="Captions">
+          <i class="fa-solid fa-closed-captioning"></i>
+        </button>
+        <button class="dockBtn hang" id="btnHangup" title="Hang up">
+          <i class="fa-solid fa-phone-slash"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Translator sheet -->
+  <div class="sheetOverlay" id="sheetOverlay">
+    <div class="sheet">
+      <div class="sheetHead">
+        <div class="sheetTitle"><i class="fa-solid fa-language"></i>&nbsp;&nbsp;Translator</div>
+        <button class="sheetClose" id="btnCloseSheet"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="sheetBody">
+        <div class="sheetGrid">
+          <div class="toggleRow">
+            <div class="left">
+              <b>Live captions</b>
+              <span>Speech → text bubbles</span>
+            </div>
+            <div class="switch" id="swCaptions"></div>
           </div>
-        </div>
 
-        <div class="dockMid">
-          <button class="dockBtn" id="btnMic"><i class="fa-solid fa-microphone"></i><span>Mute</span></button>
-          <button class="dockBtn" id="btnCam"><i class="fa-solid fa-video"></i><span>Video</span></button>
-          <button class="dockBtn" id="btnShare"><i class="fa-solid fa-display"></i><span>Share</span></button>
-          <button class="dockBtn" id="btnBoard"><i class="fa-solid fa-chalkboard"></i><span>Board</span></button>
-          <button class="dockBtn" id="btnHand"><i class="fa-solid fa-hand"></i><span>Hand</span></button>
-          <button class="dockBtn active" id="btnCaption"><i class="fa-regular fa-closed-captioning"></i><span>Caption</span></button>
-          <button class="dockBtn" id="btnRecord"><i class="fa-solid fa-circle"></i><span>Record</span></button>
-          <button class="dockBtn danger" id="btnLeave"><i class="fa-solid fa-phone-slash"></i><span>Leave</span></button>
-        </div>
+          <div class="toggleRow">
+            <div class="left">
+              <b>Translate incoming captions</b>
+              <span>Auto-translate to “My subtitle language”</span>
+            </div>
+            <div class="switch on" id="swTranslate"></div>
+          </div>
 
-        <div class="dockRight">
-          <div class="pill"><i class="fa-solid fa-globe"></i> <span id="targetLabel">—</span></div>
+          <div class="toggleRow">
+            <div class="left">
+              <b>Send my captions</b>
+              <span>Uses Deepgram STT to send your speech</span>
+            </div>
+            <div class="switch" id="swSendStt"></div>
+          </div>
+
+          <div>
+            <div class="label"><i class="fa-solid fa-language"></i> My subtitle language</div>
+            <select class="field" id="langSelectSheet"></select>
+          </div>
+
+          <div class="note">
+            • “Send my captions” streams microphone audio to Deepgram for transcription, then sends text through Firebase to the peer.<br/>
+            • The peer translates locally (Google Translate gtx) for display.
+          </div>
         </div>
       </div>
     </div>
   </div>
 
+  <div class="toast" id="toast"></div>
+
   <script>
-    /* ============================================================
-      Firebase config (yours)
-    ============================================================ */
+    /* =========================
+       REUSE CREDENTIALS ABOVE
+    ========================= */
     const firebaseConfig = {
       apiKey: "AIzaSyDVw2Xt1gf52xXgx4E5TMKf2007AyQwBfQ",
       authDomain: "impactful-ring-469323-e5.firebaseapp.com",
@@ -810,1155 +635,973 @@
       messagingSenderId: "316842561818",
       appId: "1:316842561818:web:8e580f90d4c766832c5ca3"
     };
+
+    // Same Deepgram key you used in your earlier “ORBIT” config
+    const DEEPGRAM_KEY = "dd658e27599a6c7ec1cbe38e2040de6c4533a945";
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
 
     const $ = (id) => document.getElementById(id);
 
-    /* ============================================================
-      OpenAI endpoints
-      - Realtime transcription WS:
-        wss://api.openai.com/v1/realtime?intent=transcription
-      - Translation via Responses API:
-        https://api.openai.com/v1/responses
-    ============================================================ */
-    const OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?intent=transcription";
-    const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
-    const OPENAI_TRANSLATE_MODEL = "gpt-4o-mini"; // fast, cheap
+    /* =========================
+       UI helpers
+    ========================= */
+    const toastEl = $("toast");
+    function toast(msg, ms=2500){
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(toastEl._t);
+      toastEl._t = setTimeout(()=>toastEl.classList.remove("show"), ms);
+    }
 
-    /* ============================================================
-      UI refs
-    ============================================================ */
-    const prejoin = $("prejoin");
-    const previewVideo = $("previewVideo");
-    const previewHint = $("previewHint");
-    const pjName = $("pjName");
-    const pjRoom = $("pjRoom");
-    const pjMic = $("pjMic");
-    const pjSttLang = $("pjSttLang");
-    const pjTargetLang = $("pjTargetLang");
-    const pjOpenAI = $("pjOpenAI");
-    const pjCheck = $("pjCheck");
-    const pjJoin = $("pjJoin");
+    const loading = $("loading");
+    const loadingTitle = $("loadingTitle");
+    const loadingSub = $("loadingSub");
+    const loadingMsg = $("loadingMsg");
 
-    const teacherVideo = $("teacherVideo");
-    const teacherHint = $("teacherHint");
+    function showLoading(t="Working…", sub="Please wait", m=""){
+      loadingTitle.textContent = t;
+      loadingSub.textContent = sub;
+      loadingMsg.textContent = m || "Please wait.";
+      loading.classList.remove("hidden");
+    }
+    function hideLoading(){ loading.classList.add("hidden"); }
 
-    const audioSource = $("audioSource");
-    const sttLang = $("sttLang");
-    const targetLang = $("targetLang");
+    $("btnReload").addEventListener("click", ()=>location.reload());
 
-    const roomNamePill = $("roomNamePill");
-    const pCount = $("pCount");
+    /* =========================
+       State
+    ========================= */
+    let me = null;
+    let myUid = null;
+    let myName = "You";
+    let myLang = "en";
 
-    const timerEl = $("timer");
-    const timer2El = $("timer2");
+    let mode = "create"; // create | join
+    let callId = null;
+    let role = null; // caller | callee
 
-    const btnCC = $("btnCC");
-    const btnLeaveTop = $("btnLeaveTop");
-    const btnMenu = $("btnMenu");
-    const btnExpand = $("btnExpand");
+    // WebRTC
+    let pc = null;
+    let localStream = null;
+    let remoteStream = new MediaStream();
 
-    const btnAutoPlay = $("btnAutoPlay");
+    let camDeviceId = null;
+    let micDeviceId = null;
+    let spkDeviceId = null;
+    let facingMode = "user"; // user | environment
 
-    const btnMic = $("btnMic");
-    const btnCam = $("btnCam");
-    const btnShare = $("btnShare");
-    const btnBoard = $("btnBoard");
-    const btnHand = $("btnHand");
-    const btnCaption = $("btnCaption");
-    const btnRecord = $("btnRecord");
-    const btnLeave = $("btnLeave");
-
-    const micBar = $("micBar");
-    const outBar = $("outBar");
-
-    const sttStatePill = $("sttStatePill");
-    const langLabel = $("langLabel");
-    const targetLabel = $("targetLabel");
-
-    const participantsList = $("participantsList");
-    const handQueue = $("handQueue");
-
-    const viewTabs = $("viewTabs");
-    const splitBody = $("splitBody");
-    const unifiedBody = $("unifiedBody");
-    const origCol = $("origCol");
-    const tranCol = $("tranCol");
-    const unifiedCol = $("unifiedCol");
-    const emptyOrig = $("emptyOrig");
-    const emptyTran = $("emptyTran");
-    const emptyUni  = $("emptyUni");
-
-    /* ============================================================
-      State
-    ============================================================ */
-    const LS = {
-      name: "sc_name",
-      room: "sc_room",
-      mic: "sc_mic",
-      sttLang: "sc_stt_lang",
-      tgtLang: "sc_tgt_lang",
-      openai: "sc_openai",
-      autoplay: "sc_autoplay",
-      view: "sc_view",
-      hand: "sc_hand",
-      expanded: "sc_expanded"
-    };
-
-    let uid = null;
-    let profile = { name: "User", room: "ORBIT", sttLang: "", targetLang: "nl-BE" };
-
-    let localCamStream = null;
-
-    // mic stream (selected)
-    let micStream = null;
-    let micTrack = null;
-
-    // mic metering
-    let meterCtx = null;
-    let meterSource = null;
-    let meterAnalyser = null;
-    let meterRAF = null;
-
-    // output meter placeholder (kept minimal)
-    let outLevel = 0;
-
-    // firebase presence
+    // Presence + signaling refs
     let presenceRef = null;
-    let roomRef = null;
-    let handRaised = false;
+    let peerPresenceRef = null;
+    let webrtcRef = null;
+    let offerRef = null;
+    let answerRef = null;
+    let myCandidatesRef = null;
+    let peerCandidatesRef = null;
 
-    // timer
-    let startedAt = null;
+    // Captions
+    let captionsRef = null;
+    let captionsListener = null;
+    let captionsEnabled = false;
+    let translateEnabled = true;
+    let sendSttEnabled = false;
+
+    // Deepgram STT
+    let dgWs = null;
+    let dgAudioCtx = null;
+    let dgSource = null;
+    let dgProc = null;
+    let dgZero = null;
+    let dgSentence = "";
+    let dgFlushTimer = null;
+
+    // Timer
+    let callStartAt = null;
     let timerInt = null;
 
-    // captions / stt
-    let isTranscribing = false;
-    let sttWs = null;
-    let sttCtx = null;
-    let sttSource = null;
-    let sttProc = null;
+    const FLUSH_DELAY = 1200;
 
-    let sttHadAudioSinceCommit = false;
-    let lastVoiceTs = 0;
-    let lastCommitTs = 0;
-
-    // transcript ids
-    let seq = 0;
-
-    // autoplay (tts) using speechSynthesis
-    let autoPlay = false;
-
-    /* ============================================================
-      Language lists (include Flemish)
-    ============================================================ */
-    const LANGS = [
-      { code:"auto", name:"Auto" },
-      { code:"en", name:"English" },
-      { code:"tl", name:"Filipino / Tagalog" },
-      { code:"tr", name:"Turkish" },
-      { code:"fr", name:"French" },
-      { code:"de", name:"German" },
-      { code:"es", name:"Spanish" },
-      { code:"it", name:"Italian" },
-      { code:"pt", name:"Portuguese" },
-      { code:"ru", name:"Russian" },
-      { code:"ar", name:"Arabic" },
-      { code:"ja", name:"Japanese" },
-      { code:"ko", name:"Korean" },
-      { code:"zh", name:"Chinese" },
-      { code:"nl", name:"Dutch" },
-      { code:"nl-BE", name:"Dutch (Flemish)" },
-      { code:"vls", name:"West Flemish (vls)" }
+    /* =========================
+       Languages (simple + optional DB list)
+    ========================= */
+    let languagesList = [
+      {code:"en", name:"English"},
+      {code:"tl", name:"Filipino/Tagalog"},
+      {code:"fr", name:"French"},
+      {code:"de", name:"German"},
+      {code:"es", name:"Spanish"},
+      {code:"nl-BE", name:"Dutch (Belgium)"},
+      {code:"tr", name:"Turkish"},
+      {code:"it", name:"Italian"},
+      {code:"pt-BR", name:"Portuguese (Brazil)"},
+      {code:"zh-CN", name:"Chinese (Simplified)"},
+      {code:"ja", name:"Japanese"},
+      {code:"ko", name:"Korean"},
+      {code:"ar", name:"Arabic"}
     ];
 
-    function langName(code){
-      const hit = LANGS.find(x=>x.code===code);
-      return hit ? hit.name : code;
+    async function loadLanguages(){
+      try{
+        const snap = await db.ref("/languages").once("value");
+        const d = snap.val();
+        if(!d) return;
+        const out = [];
+        if(Array.isArray(d)){
+          d.forEach(x=> out.push({code:x.code, name:x.name}));
+        }else{
+          for(const [k,v] of Object.entries(d)){
+            out.push({code:(v.code||k), name:(v.name||v)});
+          }
+        }
+        if(out.length) languagesList = out;
+      }catch{}
     }
 
-    /* ============================================================
-      Helpers
-    ============================================================ */
-    function safeSet(k,v){ try{ localStorage.setItem(k, v); }catch{} }
-    function safeGet(k, d=""){ try{ const v=localStorage.getItem(k); return v==null?d:v; }catch{return d} }
+    function fillLangSelect(sel, value){
+      sel.innerHTML = languagesList.map(l=>`<option value="${l.code}">${l.name}</option>`).join("");
+      sel.value = value || "en";
+    }
 
-    function pad2(n){ return String(n).padStart(2,"0"); }
+    /* =========================
+       Devices
+    ========================= */
+    async function enumerateDevices(){
+      const devs = await navigator.mediaDevices.enumerateDevices();
+      const cams = devs.filter(d=>d.kind==="videoinput");
+      const mics = devs.filter(d=>d.kind==="audioinput");
+      const spks = devs.filter(d=>d.kind==="audiooutput");
+
+      $("camSelect").innerHTML = cams.map((d,i)=>`<option value="${d.deviceId}">${d.label||("Camera "+(i+1))}</option>`).join("");
+      $("micSelect").innerHTML = mics.map((d,i)=>`<option value="${d.deviceId}">${d.label||("Microphone "+(i+1))}</option>`).join("");
+      $("spkSelect").innerHTML = spks.map((d,i)=>`<option value="${d.deviceId}">${d.label||("Speaker "+(i+1))}</option>`).join("");
+
+      if(cams[0]) $("camSelect").value = camDeviceId || cams[0].deviceId;
+      if(mics[0]) $("micSelect").value = micDeviceId || mics[0].deviceId;
+      if(spks[0]) $("spkSelect").value = spkDeviceId || spks[0].deviceId;
+
+      camDeviceId = $("camSelect").value || null;
+      micDeviceId = $("micSelect").value || null;
+      spkDeviceId = $("spkSelect").value || null;
+    }
+
+    async function getLocalMedia(){
+      const constraints = {
+        video: camDeviceId
+          ? { deviceId:{exact:camDeviceId} }
+          : { facingMode },
+        audio: micDeviceId
+          ? { deviceId:{exact:micDeviceId}, echoCancellation:true, noiseSuppression:true, autoGainControl:true }
+          : { echoCancellation:true, noiseSuppression:true, autoGainControl:true }
+      };
+      const s = await navigator.mediaDevices.getUserMedia(constraints);
+      return s;
+    }
+
+    async function setSpeaker(el){
+      if(!spkDeviceId) return;
+      if(typeof el.setSinkId === "function"){
+        try{ await el.setSinkId(spkDeviceId); }catch{}
+      }
+    }
+
+    /* =========================
+       Utils
+    ========================= */
+    function genId(){
+      const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let out="";
+      for(let i=0;i<6;i++) out += c[Math.floor(Math.random()*c.length)];
+      return out;
+    }
+    function nowTs(){ return Date.now(); }
     function fmtTime(sec){
+      sec = Math.max(0, Math.floor(sec));
       const m = Math.floor(sec/60);
       const s = sec%60;
-      return `${pad2(m)}:${pad2(s)}`;
+      return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+    }
+    function capInitial(name){
+      const t=(name||"?").trim();
+      return (t[0]||"?").toUpperCase();
     }
 
-    function setPill(text, state){
-      sttStatePill.innerHTML = `<i class="fa-solid fa-wave-square"></i> ${text}`;
-      sttStatePill.style.borderColor =
-        state==="on" ? "rgba(34,197,94,.32)" :
-        state==="err"? "rgba(239,68,68,.35)" : "rgba(255,255,255,.10)";
-      sttStatePill.style.background =
-        state==="on" ? "rgba(34,197,94,.14)" :
-        state==="err"? "rgba(239,68,68,.12)" : "rgba(0,0,0,.22)";
+    /* =========================
+       Prejoin UI
+    ========================= */
+    const tabCreate = $("tabCreate");
+    const tabJoin = $("tabJoin");
+    const joinBlock = $("joinBlock");
+    const createBlock = $("createBlock");
+
+    function setMode(m){
+      mode = m;
+      tabCreate.classList.toggle("active", m==="create");
+      tabJoin.classList.toggle("active", m==="join");
+      joinBlock.classList.toggle("hidden", m!=="join");
+      createBlock.classList.toggle("hidden", m!=="create");
     }
+    tabCreate.addEventListener("click", ()=>setMode("create"));
+    tabJoin.addEventListener("click", ()=>setMode("join"));
 
-    function toast(msg){
-      // Minimal toast = use console + subtle UI indicator.
-      console.log("[UI]", msg);
-    }
+    $("btnCopy").addEventListener("click", async ()=>{
+      const id = $("callIdOut").value.trim();
+      if(!id || id==="—") return;
+      try{ await navigator.clipboard.writeText(id); toast("Copied Call ID"); }catch{ toast("Copy failed"); }
+    });
+    $("btnShare").addEventListener("click", async ()=>{
+      const id = $("callIdOut").value.trim();
+      if(!id || id==="—") return;
+      const url = `${location.origin}${location.pathname}?call=${encodeURIComponent(id)}`;
+      try{
+        if(navigator.share){
+          await navigator.share({ title:"Orbit One-to-One Call", text:`Join my call: ${id}`, url });
+        }else{
+          await navigator.clipboard.writeText(url);
+          toast("Link copied");
+        }
+      }catch{}
+    });
 
-    function nowMs(){ return Date.now(); }
-
-    function b64FromBytes(bytes){
-      let binary = "";
-      const chunk = 0x8000;
-      for(let i=0;i<bytes.length;i+=chunk){
-        binary += String.fromCharCode.apply(null, bytes.subarray(i, i+chunk));
+    $("btnPreview").addEventListener("click", async ()=>{
+      try{
+        showLoading("Previewing…","Checking devices","Requesting camera/mic permission…");
+        // Quick permission prompt
+        const tmp = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+        tmp.getTracks().forEach(t=>t.stop());
+        await enumerateDevices();
+        hideLoading();
+        toast("Devices ready");
+      }catch(e){
+        hideLoading();
+        toast("Permission denied or no devices");
       }
-      return btoa(binary);
-    }
+    });
 
-    function downsampleFloat32(input, inRate, outRate){
-      if(outRate === inRate) return input;
-      const ratio = inRate / outRate;
-      const newLen = Math.floor(input.length / ratio);
-      const out = new Float32Array(newLen);
-      let o = 0;
-      let i = 0;
-      while(o < newLen){
-        out[o++] = input[Math.floor(i)];
-        i += ratio;
+    $("camSelect").addEventListener("change", ()=>{ camDeviceId = $("camSelect").value; });
+    $("micSelect").addEventListener("change", ()=>{ micDeviceId = $("micSelect").value; });
+    $("spkSelect").addEventListener("change", ()=>{ spkDeviceId = $("spkSelect").value; });
+
+    $("langSelect").addEventListener("change", ()=>{
+      myLang = $("langSelect").value;
+      $("langSelectSheet").value = myLang;
+      if(me && me.uid) db.ref(`/o2o/users/${me.uid}/lang`).set(myLang).catch(()=>{});
+      toast("Subtitle language set");
+    });
+
+    $("langSelectSheet").addEventListener("change", ()=>{
+      myLang = $("langSelectSheet").value;
+      $("langSelect").value = myLang;
+      if(me && me.uid) db.ref(`/o2o/users/${me.uid}/lang`).set(myLang).catch(()=>{});
+      toast("Subtitle language set");
+    });
+
+    /* =========================
+       Auth (anonymous by default)
+    ========================= */
+    $("btnSignOut").addEventListener("click", async ()=>{
+      try{ await auth.signOut(); }catch{}
+      location.reload();
+    });
+
+    auth.onAuthStateChanged(async (u)=>{
+      try{
+        showLoading("Starting…","Auth","Signing in…");
+        if(!u){
+          await auth.signInAnonymously();
+          return; // will re-enter onAuthStateChanged
+        }
+        me = u;
+        myUid = u.uid;
+
+        await loadLanguages();
+
+        // Prefill name
+        const savedNameSnap = await db.ref(`/o2o/users/${myUid}/name`).once("value");
+        const savedName = savedNameSnap.val();
+        myName = savedName || `User-${myUid.slice(0,4)}`;
+        $("displayName").value = myName;
+
+        const savedLangSnap = await db.ref(`/o2o/users/${myUid}/lang`).once("value");
+        myLang = savedLangSnap.val() || "en";
+
+        fillLangSelect($("langSelect"), myLang);
+        fillLangSelect($("langSelectSheet"), myLang);
+
+        // Ensure permissions to list devices
+        try{
+          const tmp = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+          tmp.getTracks().forEach(t=>t.stop());
+        }catch{}
+        await enumerateDevices();
+
+        // URL param auto-join
+        const p = new URLSearchParams(location.search);
+        const id = (p.get("call")||"").trim().toUpperCase();
+        if(id){
+          setMode("join");
+          $("callIdInput").value = id;
+          $("callIdOut").value = id;
+        }else{
+          // create a fresh id
+          const newId = genId();
+          $("callIdOut").value = newId;
+        }
+
+        hideLoading();
+      }catch(e){
+        showLoading("Error","Init failed", String(e?.message||e));
       }
-      return out;
-    }
+    });
 
-    function floatToPCM16(f32){
-      const out = new Int16Array(f32.length);
-      for(let i=0;i<f32.length;i++){
-        let s = Math.max(-1, Math.min(1, f32[i]));
-        out[i] = s < 0 ? s*0x8000 : s*0x7fff;
+    /* =========================
+       Start Call
+    ========================= */
+    $("btnStart").addEventListener("click", async ()=>{
+      try{
+        myName = $("displayName").value.trim() || myName;
+        await db.ref(`/o2o/users/${myUid}/name`).set(myName);
+
+        if(mode==="create"){
+          callId = ($("callIdOut").value || genId()).trim().toUpperCase();
+          $("callIdOut").value = callId;
+        }else{
+          callId = ($("callIdInput").value || "").trim().toUpperCase();
+          if(!callId || callId.length < 4) return toast("Enter a valid Call ID");
+          $("callIdOut").value = callId;
+        }
+
+        // Update URL
+        history.replaceState({}, "", `${location.pathname}?call=${encodeURIComponent(callId)}`);
+
+        await startCall(callId);
+      }catch(e){
+        toast("Start failed: " + (e?.message||e));
       }
-      return out;
-    }
+    });
 
-    function rmsLevel(f32){
-      let sum = 0;
-      for(let i=0;i<f32.length;i++){
-        const v = f32[i];
-        sum += v*v;
-      }
-      return Math.sqrt(sum / Math.max(1,f32.length));
-    }
+    /* =========================
+       Core: WebRTC + Firebase Signaling
+    ========================= */
+    function makePc(){
+      const iceServers = [
+        { urls:["stun:stun.l.google.com:19302","stun:stun1.l.google.com:19302","stun:stun2.l.google.com:19302"] }
+      ];
+      const pc = new RTCPeerConnection({ iceServers });
 
-    function setActive(btn, on){
-      btn.classList.toggle("active", !!on);
-    }
-
-    function setMuted(btn, on){
-      btn.classList.toggle("muted", !!on);
-    }
-
-    function setDockCaption(on){
-      setActive(btnCC, on);
-      setActive(btnCaption, on);
-    }
-
-    function removeEmpty(){
-      if(emptyOrig) emptyOrig.classList.add("hidden");
-      if(emptyTran) emptyTran.classList.add("hidden");
-      if(emptyUni)  emptyUni.classList.add("hidden");
-    }
-
-    /* ============================================================
-      Render transcript lines
-    ============================================================ */
-    function addLine({who, text, translation}){
-      seq++;
-      removeEmpty();
-
-      const time = new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
-      const initial = (who || "U").trim().charAt(0).toUpperCase();
-
-      const mkLine = (container, txt)=>{
-        const div = document.createElement("div");
-        div.className = "line";
-        div.innerHTML = `
-          <div class="lineTop">
-            <span class="badge">${initial}</span>
-            <span class="who">${escapeHtml(who || "User")}</span>
-            <span class="time">${time}</span>
-          </div>
-          <div class="txt">${escapeHtml(txt || "")}</div>
-        `;
-        container.appendChild(div);
-        container.scrollTop = container.scrollHeight;
+      pc.oniceconnectionstatechange = ()=>{
+        const st = pc.iceConnectionState;
+        $("peerStatus").textContent = st;
+        if(st==="failed" || st==="disconnected"){
+          toast("Connection issue: " + st, 2200);
+        }
       };
 
-      // Split
-      mkLine(origCol, text || "");
-      mkLine(tranCol, translation || "…");
+      pc.ontrack = (ev)=>{
+        ev.streams[0].getTracks().forEach(t=>remoteStream.addTrack(t));
+        $("remoteVideo").srcObject = remoteStream;
+        setSpeaker($("remoteVideo"));
+      };
 
-      // Unified
-      const uni = document.createElement("div");
-      uni.className = "line";
-      uni.innerHTML = `
-        <div class="lineTop">
-          <span class="badge">${initial}</span>
-          <span class="who">${escapeHtml(who || "User")}</span>
-          <span class="time">${time}</span>
-        </div>
-        <div class="txt">${escapeHtml(text || "")}</div>
-        <div class="txt" style="margin-top:8px;color:rgba(245,245,245,.75);border-left:3px solid rgba(99,102,241,.55);padding-left:10px;">
-          ${escapeHtml(translation || "")}
-        </div>
-      `;
-      unifiedCol.appendChild(uni);
-      unifiedCol.scrollTop = unifiedCol.scrollHeight;
+      return pc;
+    }
+
+    async function startCall(id){
+      showLoading("Starting call…","WebRTC","Preparing camera and mic…");
+
+      // Enter call UI
+      $("prejoin").classList.add("hidden");
+      $("callScreen").classList.remove("hidden");
+      document.body.classList.add("no-scroll");
+
+      // Reset UI pieces
+      $("peerName").textContent = "Waiting for peer…";
+      $("peerAvatar").textContent = "?";
+      $("peerStatus").textContent = "Connecting";
+      $("captions").innerHTML = "";
+      $("captions").classList.add("hidden");
+      $("btnToggleCaptions").classList.remove("active");
+      $("btnTranslator").classList.remove("active");
+
+      // Setup refs
+      webrtcRef = db.ref(`/o2o/webrtc/${id}`);
+      offerRef = webrtcRef.child("offer");
+      answerRef = webrtcRef.child("answer");
+
+      // Presence for UI name
+      presenceRef = db.ref(`/o2o/calls/${id}/presence/${myUid}`);
+      peerPresenceRef = db.ref(`/o2o/calls/${id}/presence`);
+
+      await presenceRef.set({
+        uid: myUid,
+        name: myName,
+        lang: myLang,
+        joinedAt: firebase.database.ServerValue.TIMESTAMP,
+        lastSeen: firebase.database.ServerValue.TIMESTAMP
+      });
+      presenceRef.onDisconnect().remove();
+
+      // Heartbeat
+      presenceRef._hb = setInterval(()=>{
+        presenceRef.update({ lastSeen: firebase.database.ServerValue.TIMESTAMP }).catch(()=>{});
+      }, 15000);
+
+      // Observe peer presence to show name
+      peerPresenceRef.on("value", snap=>{
+        const obj = snap.val() || {};
+        const entries = Object.values(obj).filter(Boolean).filter(x=>x.uid !== myUid);
+        if(entries.length){
+          const peer = entries.sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0))[0];
+          $("peerName").textContent = peer.name || "Peer";
+          $("peerAvatar").textContent = capInitial(peer.name||"P");
+          $("peerStatus").textContent = "Connected";
+        }else{
+          $("peerName").textContent = "Waiting for peer…";
+          $("peerAvatar").textContent = "?";
+        }
+      });
+
+      // Local media
+      localStream = await getLocalMedia();
+      $("localVideo").srcObject = localStream;
+
+      // Create PC & add tracks
+      pc = makePc();
+      localStream.getTracks().forEach(t=>pc.addTrack(t, localStream));
+
+      // Decide role by checking offer existence
+      const offerSnap = await offerRef.once("value");
+      role = offerSnap.exists() ? "callee" : "caller";
+
+      myCandidatesRef = webrtcRef.child(`candidates/${role}`);
+      peerCandidatesRef = webrtcRef.child(`candidates/${role==="caller" ? "callee" : "caller"}`);
+
+      pc.onicecandidate = (ev)=>{
+        if(ev.candidate){
+          myCandidatesRef.push(ev.candidate.toJSON()).catch(()=>{});
+        }
+      };
+
+      // Listen for peer candidates
+      peerCandidatesRef.on("child_added", snap=>{
+        const c = snap.val();
+        if(!c) return;
+        try{ pc.addIceCandidate(new RTCIceCandidate(c)); }catch{}
+      });
+
+      // Attach captions channel
+      captionsRef = db.ref(`/o2o/calls/${id}/captions`);
+
+      // Start timer
+      callStartAt = Date.now();
+      clearInterval(timerInt);
+      timerInt = setInterval(()=>{
+        const sec = (Date.now() - callStartAt)/1000;
+        $("callTimer").textContent = fmtTime(sec);
+      }, 500);
+
+      // Signaling
+      if(role==="caller"){
+        $("peerStatus").textContent = "Calling…";
+
+        const offer = await pc.createOffer({ offerToReceiveAudio:true, offerToReceiveVideo:true });
+        await pc.setLocalDescription(offer);
+        await offerRef.set(offer.toJSON());
+
+        // Wait for answer
+        answerRef.on("value", async snap=>{
+          const ans = snap.val();
+          if(!ans) return;
+          if(pc.currentRemoteDescription) return;
+          try{
+            await pc.setRemoteDescription(new RTCSessionDescription(ans));
+            $("peerStatus").textContent = "Connected";
+          }catch{}
+        });
+
+      }else{
+        $("peerStatus").textContent = "Answering…";
+
+        // Get offer
+        const off = offerSnap.val();
+        await pc.setRemoteDescription(new RTCSessionDescription(off));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        await answerRef.set(answer.toJSON());
+
+        $("peerStatus").textContent = "Connected";
+      }
+
+      // Captions listener (always attach; rendering depends on toggles)
+      attachCaptionsListener();
+
+      hideLoading();
+      toast(`Call ${id} started (${role})`, 2000);
+    }
+
+    /* =========================
+       Captions + Translation
+    ========================= */
+    function attachCaptionsListener(){
+      if(!captionsRef) return;
+      if(captionsListener) return;
+
+      captionsListener = captionsRef.limitToLast(80).on("child_added", async (snap)=>{
+        const e = snap.val();
+        if(!e || !e.text) return;
+
+        const mine = (e.from === myUid);
+        const ts = e.ts || Date.now();
+        const time = new Date(ts).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+
+        // Only render bubbles if captions enabled
+        if(!captionsEnabled) return;
+
+        // Translate incoming if enabled and not mine (or also mine if you want)
+        let translated = "";
+        if(translateEnabled){
+          try{
+            const target = myLang || "en";
+            translated = await googleTranslate(e.text, "auto", target);
+          }catch{}
+        }
+
+        pushCaptionBubble({
+          mine,
+          name: e.name || (mine ? "You" : "Peer"),
+          time,
+          original: e.text,
+          translated
+        });
+      });
+    }
+
+    function pushCaptionBubble({mine, name, time, original, translated}){
+      const wrap = $("captions");
+      const row = document.createElement("div");
+      row.className = "capRow" + (mine ? " mine" : "");
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+
+      const top = document.createElement("div");
+      top.className = "bubbleTop";
+      top.innerHTML = `<span>${escapeHtml(name)}</span><span class="t">${escapeHtml(time)}</span>`;
+
+      const o = document.createElement("div");
+      o.className = "orig";
+      o.textContent = original;
+
+      bubble.appendChild(top);
+      bubble.appendChild(o);
+
+      if(translated && translated.trim() && translated.trim() !== original.trim()){
+        const t = document.createElement("div");
+        t.className = "tran";
+        t.innerHTML = `<small>TRANSL</small> ${escapeHtml(translated)}`;
+        bubble.appendChild(t);
+      }
+
+      row.appendChild(bubble);
+      wrap.appendChild(row);
+      wrap.scrollTop = wrap.scrollHeight;
     }
 
     function escapeHtml(s){
-      const d = document.createElement("div");
-      d.textContent = s ?? "";
+      const d=document.createElement("div");
+      d.textContent = String(s||"");
       return d.innerHTML;
     }
 
-    /* ============================================================
-      Translation (OpenAI Responses API)
-    ============================================================ */
-    async function translateText(text, targetCode, apiKey){
-      const tName = langName(targetCode);
-      const body = {
-        model: OPENAI_TRANSLATE_MODEL,
-        instructions: "You are a strict real-time translator. Output ONLY the translated text. No quotes. No commentary.",
-        input: `Translate into ${tName}:\n\n${text}`
+    async function googleTranslate(text, sl="auto", tl="en"){
+      const q = encodeURIComponent(text);
+      const r = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${q}`);
+      if(!r.ok) throw new Error("translate " + r.status);
+      const d = await r.json();
+      return (d?.[0]||[]).filter(x=>Array.isArray(x)&&typeof x[0]==="string").map(x=>x[0]).join("").trim();
+    }
+
+    async function sendCaption(text){
+      if(!captionsRef || !text || !text.trim()) return;
+      const payload = {
+        from: myUid,
+        name: myName,
+        text: text.trim(),
+        ts: nowTs()
       };
+      await captionsRef.push(payload);
+    }
 
-      const res = await fetch(OPENAI_RESPONSES_URL, {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "Authorization":"Bearer " + apiKey
-        },
-        body: JSON.stringify(body)
-      });
+    /* =========================
+       Deepgram STT (Send My Captions)
+    ========================= */
+    function dgCleanup(){
+      try{ dgProc?.disconnect(); }catch{}
+      try{ dgSource?.disconnect(); }catch{}
+      try{ dgZero?.disconnect(); }catch{}
+      dgProc = dgSource = dgZero = null;
+      try{ dgAudioCtx?.close(); }catch{}
+      dgAudioCtx = null;
+      try{ dgWs?.close(); }catch{}
+      dgWs = null;
 
-      if(!res.ok){
-        const tx = await res.text().catch(()=> "");
-        throw new Error(`Translate failed (${res.status}): ${tx.slice(0,180)}`);
-      }
+      dgSentence = "";
+      if(dgFlushTimer){ clearTimeout(dgFlushTimer); dgFlushTimer = null; }
+    }
 
-      const data = await res.json();
-
-      if(typeof data.output_text === "string" && data.output_text.trim()){
-        return data.output_text.trim();
-      }
-
-      // fallback scan
-      const out = data.output || [];
-      for(const item of out){
-        for(const part of (item.content || [])){
-          if(part.type === "output_text" && typeof part.text === "string" && part.text.trim()){
-            return part.text.trim();
-          }
+    function dgDownsample(f32, inR, outR){
+      if(outR === inR){
+        const out = new Int16Array(f32.length);
+        for(let i=0;i<f32.length;i++){
+          const s = Math.max(-1, Math.min(1, f32[i]));
+          out[i] = s < 0 ? s*0x8000 : s*0x7FFF;
         }
+        return out;
       }
-
-      return text;
+      const ratio = inR / outR;
+      const newLen = Math.floor(f32.length / ratio);
+      const out = new Int16Array(newLen);
+      for(let i=0;i<newLen;i++){
+        const idx = Math.floor(i * ratio);
+        const s = Math.max(-1, Math.min(1, f32[idx]));
+        out[i] = s < 0 ? s*0x8000 : s*0x7FFF;
+      }
+      return out;
     }
 
-    /* ============================================================
-      Auto-play (client) - SpeechSynthesis
-    ============================================================ */
-    function speak(text, langCode){
-      try{
-        if(!window.speechSynthesis) return;
-        const u = new SpeechSynthesisUtterance(text);
-        // best-effort lang (doesn't guarantee voice exists)
-        u.lang = langCode === "nl-BE" ? "nl-BE" : (langCode || "en");
-        u.rate = 1.0;
-        u.pitch = 1.0;
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(u);
-      }catch{}
-    }
+    async function dgStart(){
+      if(!sendSttEnabled) return;
+      if(!localStream) return;
+      if(dgWs && dgWs.readyState===1) return;
 
-    /* ============================================================
-      OpenAI Realtime STT
-    ============================================================ */
-    function wsProtocolsForKey(apiKey){
-      // OpenAI realtime pattern
-      return ["realtime", `openai-insecure-api-key.${apiKey}`, "openai-beta.realtime-v1"];
-    }
-
-    function openSttSocket(apiKey, langCode){
-      return new Promise((resolve, reject)=>{
-        try{
-          const ws = new WebSocket(OPENAI_REALTIME_URL, wsProtocolsForKey(apiKey));
-          ws.onopen = ()=>{
-            // session update
-            const msg = {
-              type: "transcription_session.update",
-              input_audio_format: "pcm16",
-              input_audio_transcription: {
-                model: "gpt-4o-transcribe",
-                prompt: "",
-                language: (langCode && langCode !== "auto") ? langCode : ""
-              },
-              turn_detection: {
-                type: "server_vad",
-                threshold: 0.5,
-                prefix_padding_ms: 300,
-                silence_duration_ms: 500
-              },
-              input_audio_noise_reduction: { type:"near_field" }
-            };
-            ws.send(JSON.stringify(msg));
-            resolve(ws);
-          };
-          ws.onerror = (e)=> reject(e);
-        }catch(e){
-          reject(e);
-        }
-      });
-    }
-
-    function sttSendAppend(ws, pcm16){
-      // base64 audio frame
-      const b64 = b64FromBytes(new Uint8Array(pcm16.buffer));
-      ws.send(JSON.stringify({ type:"input_audio_buffer.append", audio: b64 }));
-    }
-
-    function sttSendCommit(ws){
-      // Commit current buffer as an "utterance boundary" (we do this on silence)
-      ws.send(JSON.stringify({ type:"input_audio_buffer.commit" }));
-      ws.send(JSON.stringify({ type:"input_audio_buffer.clear" }));
-    }
-
-    async function startSTT(){
-      if(isTranscribing) return;
-
-      const apiKey = (pjOpenAI.value || "").trim();
-      if(!apiKey){
-        setPill("Missing OpenAI key", "err");
+      const track = localStream.getAudioTracks?.()[0];
+      if(!track){
+        toast("No mic track for captions");
         return;
       }
 
-      // ensure mic stream exists
-      await ensureMicStream(audioSource.value || pjMic.value);
+      const dgUrl =
+        "wss://api.deepgram.com/v1/listen" +
+        "?endpointing=false" +
+        "&interim_results=true" +
+        "&punctuate=true" +
+        "&smart_format=true" +
+        "&vad_events=true" +
+        "&language=multi" +
+        "&model=nova-3" +
+        "&encoding=linear16" +
+        "&sample_rate=16000";
 
-      if(!micTrack){
-        setPill("No mic track", "err");
-        return;
-      }
+      dgWs = new WebSocket(dgUrl, ["token", DEEPGRAM_KEY]);
+      dgWs.binaryType = "arraybuffer";
 
-      try{
-        setPill("Connecting…", "idle");
-        const ws = await openSttSocket(apiKey, sttLang.value);
-        sttWs = ws;
-      }catch(e){
-        console.error("STT WS error:", e);
-        setPill("STT connect failed", "err");
-        return;
-      }
+      dgWs.onopen = async ()=>{
+        dgAudioCtx = new (window.AudioContext||window.webkitAudioContext)({latencyHint:"interactive"});
+        await dgAudioCtx.resume().catch(()=>{});
 
-      isTranscribing = true;
-      setDockCaption(true);
-      setPill("STT live", "on");
-      sttHadAudioSinceCommit = false;
-      lastVoiceTs = 0;
-      lastCommitTs = nowMs();
+        const isolated = new MediaStream([track]);
+        dgSource = dgAudioCtx.createMediaStreamSource(isolated);
+        dgProc = dgAudioCtx.createScriptProcessor(2048,1,1);
+        dgZero = dgAudioCtx.createGain();
+        dgZero.gain.value = 0;
 
-      // start audio capture into WS
-      await startSttAudioPipeline();
+        dgSource.connect(dgProc);
+        dgProc.connect(dgZero);
+        dgZero.connect(dgAudioCtx.destination);
 
-      // handle messages
-      sttWs.onmessage = async (ev)=>{
-        let msg;
-        try{ msg = JSON.parse(ev.data); }catch{ return; }
-
-        // Most common: completed transcript
-        // type: conversation.item.input_audio_transcription.completed
-        const t = msg?.type || "";
-        const transcript =
-          (t === "conversation.item.input_audio_transcription.completed" && msg?.transcript) ? String(msg.transcript) :
-          (msg?.transcript ? String(msg.transcript) : "");
-
-        if(transcript && transcript.trim()){
-          const text = transcript.trim();
-
-          // translate
-          let tr = "…";
-          try{
-            tr = await translateText(text, targetLang.value, apiKey);
-          }catch(e){
-            console.warn("translate failed:", e);
-            tr = text;
-          }
-
-          addLine({ who: profile.name, text, translation: tr });
-
-          if(autoPlay){
-            speak(tr, targetLang.value);
-          }
-
-          // optional: push transcript to Firebase history
-          pushTranscriptToDB({ text, translation: tr }).catch(()=>{});
-        }
-      };
-
-      sttWs.onclose = ()=>{
-        if(isTranscribing){
-          stopSTT(true);
-          setPill("STT disconnected", "err");
-        }
-      };
-      sttWs.onerror = ()=>{
-        // let onclose handle UI
-      };
-    }
-
-    async function stopSTT(silent=false){
-      isTranscribing = false;
-      setDockCaption(false);
-
-      try{ sttProc?.disconnect(); }catch{}
-      try{ sttSource?.disconnect(); }catch{}
-      sttProc = null;
-      sttSource = null;
-
-      try{ sttCtx?.close(); }catch{}
-      sttCtx = null;
-
-      try{ sttWs?.close(); }catch{}
-      sttWs = null;
-
-      if(!silent){
-        setPill("STT idle", "idle");
-      }
-    }
-
-    async function startSttAudioPipeline(){
-      // sttCtx reads micStream and sends frames (downsample to 16k pcm16)
-      try{
-        sttCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
-        await sttCtx.resume().catch(()=>{});
-
-        const isolated = new MediaStream([micTrack]);
-        sttSource = sttCtx.createMediaStreamSource(isolated);
-
-        // ScriptProcessor for demo reliability
-        sttProc = sttCtx.createScriptProcessor(2048, 1, 1);
-
-        // keep alive without audible output
-        const zero = sttCtx.createGain();
-        zero.gain.value = 0;
-
-        sttSource.connect(sttProc);
-        sttProc.connect(zero);
-        zero.connect(sttCtx.destination);
-
-        sttProc.onaudioprocess = (e)=>{
-          if(!isTranscribing || !sttWs || sttWs.readyState !== 1) return;
+        dgProc.onaudioprocess = (e)=>{
+          if(!dgWs || dgWs.readyState!==1) return;
           const f32 = e.inputBuffer.getChannelData(0);
-
-          const level = rmsLevel(f32);
-          // update mic meter
-          micBar.style.width = `${Math.min(100, Math.max(0, level*220))}%`;
-
-          // voice activity
-          const voiced = level > 0.012; // tuned for typical mic noise
-          if(voiced){
-            lastVoiceTs = nowMs();
-            sttHadAudioSinceCommit = true;
-          }
-
-          // downsample → pcm16 16k
-          const down = downsampleFloat32(f32, sttCtx.sampleRate, 16000);
-          const pcm16 = floatToPCM16(down);
-
-          // append
-          try{ sttSendAppend(sttWs, pcm16); }catch{}
-
-          // commit on silence boundary (~600ms after voice ends)
-          const now = nowMs();
-          if(sttHadAudioSinceCommit){
-            const sinceVoice = lastVoiceTs ? (now - lastVoiceTs) : 0;
-            const sinceCommit = now - lastCommitTs;
-
-            if(sinceVoice > 650 && sinceCommit > 400){
-              try{ sttSendCommit(sttWs); }catch{}
-              sttHadAudioSinceCommit = false;
-              lastCommitTs = now;
-            }
-          }
+          const pcm16 = dgDownsample(f32, dgAudioCtx.sampleRate, 16000);
+          dgWs.send(pcm16.buffer);
         };
 
-        // output bar placeholder (kept minimal)
-        outLevel = 0;
-        outBar.style.width = `0%`;
-      }catch(e){
-        console.error("Audio pipeline error:", e);
-        stopSTT(true);
-        setPill("STT pipeline failed", "err");
-      }
-    }
-
-    /* ============================================================
-      Mic / Cam toggles (local preview only)
-    ============================================================ */
-    async function ensureCamPreview(){
-      if(localCamStream) return;
-      try{
-        localCamStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:false });
-        previewVideo.srcObject = localCamStream;
-        teacherVideo.srcObject = localCamStream;
-        previewHint.classList.add("hidden");
-        teacherHint.classList.add("hidden");
-      }catch(e){
-        console.warn("cam preview fail:", e);
-      }
-    }
-
-    async function ensureMicStream(deviceId){
-      // stop old
-      try{ micStream?.getTracks()?.forEach(t=>t.stop()); }catch{}
-      micStream = null;
-      micTrack = null;
-
-      try{
-        micStream = await navigator.mediaDevices.getUserMedia({
-          audio: deviceId ? { deviceId: { exact: deviceId }, echoCancellation:true, noiseSuppression:true, autoGainControl:true } : true,
-          video: false
-        });
-        micTrack = micStream.getAudioTracks()[0] || null;
-        setupMicMeter();
-      }catch(e){
-        console.error("mic getUserMedia failed:", e);
-        micTrack = null;
-      }
-    }
-
-    function setupMicMeter(){
-      // tear down
-      try{ meterCtx?.close(); }catch{}
-      meterCtx = null;
-      meterSource = null;
-      meterAnalyser = null;
-      if(meterRAF) cancelAnimationFrame(meterRAF);
-      meterRAF = null;
-
-      if(!micStream) return;
-
-      meterCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint:"interactive" });
-      meterSource = meterCtx.createMediaStreamSource(micStream);
-      meterAnalyser = meterCtx.createAnalyser();
-      meterAnalyser.fftSize = 1024;
-      meterSource.connect(meterAnalyser);
-
-      const buf = new Uint8Array(meterAnalyser.frequencyBinCount);
-
-      const tick = ()=>{
-        if(!meterAnalyser){ return; }
-        meterAnalyser.getByteTimeDomainData(buf);
-
-        // compute RMS from byte waveform
-        let sum = 0;
-        for(let i=0;i<buf.length;i++){
-          const v = (buf[i]-128)/128;
-          sum += v*v;
-        }
-        const rms = Math.sqrt(sum / buf.length);
-        const pct = Math.min(100, Math.max(0, rms * 260));
-        micBar.style.width = pct.toFixed(1) + "%";
-
-        // output meter (placeholder)
-        outBar.style.width = (outLevel*100).toFixed(1) + "%";
-
-        meterRAF = requestAnimationFrame(tick);
-      };
-      tick();
-    }
-
-    /* ============================================================
-      Firebase presence + participants list + hand queue
-    ============================================================ */
-    async function ensureAuth(){
-      if(auth.currentUser) return auth.currentUser;
-
-      // Anonymous auth to keep it single-file
-      const u = await auth.signInAnonymously();
-      return u.user;
-    }
-
-    function roomKey(room){
-      return String(room || "ORBIT").trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "");
-    }
-
-    async function joinPresence(room, name, sttCode, targetCode){
-      const rk = roomKey(room);
-      roomRef = db.ref(`/sc/presence/${rk}`);
-      presenceRef = roomRef.child(uid);
-
-      const payload = {
-        uid,
-        name,
-        room: rk,
-        sttLang: sttCode || "",
-        targetLang: targetCode || "",
-        micMuted: false,
-        camOff: false,
-        handRaised: false,
-        joinedAt: firebase.database.ServerValue.TIMESTAMP,
-        lastSeen: firebase.database.ServerValue.TIMESTAMP
+        toast("Caption sending ON");
       };
 
-      await presenceRef.set(payload);
-      presenceRef.onDisconnect().remove();
+      dgWs.onmessage = (ev)=>{
+        let d;
+        try{ d = JSON.parse(ev.data); }catch{ return; }
+        const alt = d.channel?.alternatives?.[0];
+        const txt = (alt?.transcript || "").trim();
+        if(!txt) return;
 
-      // heartbeat
-      setInterval(()=>{
-        if(presenceRef){
-          presenceRef.child("lastSeen").set(firebase.database.ServerValue.TIMESTAMP);
+        const isFinal = Boolean(d.is_final || d.speech_final);
+        if(!isFinal) return;
+
+        dgSentence = (dgSentence ? (dgSentence + " " + txt) : txt).replace(/\s+/g," ").trim();
+
+        if(dgFlushTimer) clearTimeout(dgFlushTimer);
+        const fastFlush = Boolean(d.speech_final || d.type==="UtteranceEnd");
+        const delay = fastFlush ? 300 : FLUSH_DELAY;
+
+        dgFlushTimer = setTimeout(async ()=>{
+          const out = (dgSentence||"").trim();
+          dgSentence = "";
+          if(out){
+            // render my bubble immediately
+            if(captionsEnabled){
+              const time = new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+              pushCaptionBubble({mine:true, name:"You", time, original:out, translated: translateEnabled ? await googleTranslate(out,"auto",myLang).catch(()=> "") : ""});
+            }
+            // send to peer
+            await sendCaption(out).catch(()=>{});
+          }
+        }, delay);
+      };
+
+      dgWs.onclose = ()=>{
+        // If user didn't turn it off, keep silent; they can toggle again
+      };
+      dgWs.onerror = ()=>{};
+    }
+
+    function dgStop(){
+      dgCleanup();
+      toast("Caption sending OFF");
+    }
+
+    /* =========================
+       Translator Sheet / Toggles
+    ========================= */
+    const sheetOverlay = $("sheetOverlay");
+
+    function openSheet(){
+      sheetOverlay.classList.add("open");
+      $("btnTranslator").classList.add("active");
+    }
+    function closeSheet(){
+      sheetOverlay.classList.remove("open");
+      $("btnTranslator").classList.remove("active");
+    }
+    $("btnTranslator").addEventListener("click", ()=> sheetOverlay.classList.contains("open") ? closeSheet() : openSheet());
+    $("btnCloseSheet").addEventListener("click", closeSheet);
+    sheetOverlay.addEventListener("click", (e)=>{ if(e.target === sheetOverlay) closeSheet(); });
+
+    function setSwitch(el, on){
+      el.classList.toggle("on", !!on);
+    }
+
+    const swCaptions = $("swCaptions");
+    const swTranslate = $("swTranslate");
+    const swSendStt = $("swSendStt");
+
+    function applyCaptionsUI(){
+      $("captions").classList.toggle("hidden", !captionsEnabled);
+      $("btnToggleCaptions").classList.toggle("active", captionsEnabled);
+      $("btnCaptionsDock").classList.toggle("off", !captionsEnabled);
+      $("btnCaptionsDock").classList.toggle("on", captionsEnabled);
+
+      if(captionsEnabled){
+        // If enabled and translation is toggled and STT sending is on, start STT
+        if(sendSttEnabled) dgStart();
+      }else{
+        // If captions hidden, stop STT sending too (optional safe)
+        dgStop();
+      }
+    }
+
+    swCaptions.addEventListener("click", ()=>{
+      captionsEnabled = !captionsEnabled;
+      setSwitch(swCaptions, captionsEnabled);
+      if(!captionsEnabled) {
+        // Clear UI but keep in DB
+        $("captions").innerHTML = "";
+      }
+      applyCaptionsUI();
+    });
+
+    swTranslate.addEventListener("click", ()=>{
+      translateEnabled = !translateEnabled;
+      setSwitch(swTranslate, translateEnabled);
+      toast(translateEnabled ? "Translate ON" : "Translate OFF");
+    });
+
+    swSendStt.addEventListener("click", ()=>{
+      sendSttEnabled = !sendSttEnabled;
+      setSwitch(swSendStt, sendSttEnabled);
+      if(sendSttEnabled){
+        if(captionsEnabled) dgStart();
+        else toast("Turn on Live captions first");
+      }else{
+        dgStop();
+      }
+    });
+
+    // Top bar caption toggle
+    $("btnToggleCaptions").addEventListener("click", ()=>{
+      captionsEnabled = !captionsEnabled;
+      setSwitch(swCaptions, captionsEnabled);
+      if(!captionsEnabled) $("captions").innerHTML = "";
+      applyCaptionsUI();
+    });
+
+    // Dock caption button
+    $("btnCaptionsDock").addEventListener("click", ()=>{
+      captionsEnabled = !captionsEnabled;
+      setSwitch(swCaptions, captionsEnabled);
+      if(!captionsEnabled) $("captions").innerHTML = "";
+      applyCaptionsUI();
+    });
+
+    // Default sheet states
+    setSwitch(swCaptions, false);
+    setSwitch(swTranslate, true);
+    setSwitch(swSendStt, false);
+
+    /* =========================
+       Call controls
+    ========================= */
+    function setBtnState(btn, on, iconOn, iconOff){
+      btn.classList.toggle("on", on);
+      btn.classList.toggle("off", !on);
+      btn.innerHTML = `<i class="fa-solid ${on ? iconOn : iconOff}"></i>`;
+    }
+
+    let micOn = true;
+    let camOn = true;
+
+    $("btnMic").addEventListener("click", ()=>{
+      if(!localStream) return;
+      const t = localStream.getAudioTracks()[0];
+      if(!t) return;
+      micOn = !micOn;
+      t.enabled = micOn;
+      setBtnState($("btnMic"), micOn, "fa-microphone", "fa-microphone-slash");
+      toast(micOn ? "Mic ON" : "Mic OFF");
+    });
+
+    $("btnCam").addEventListener("click", ()=>{
+      if(!localStream) return;
+      const t = localStream.getVideoTracks()[0];
+      if(!t) return;
+      camOn = !camOn;
+      t.enabled = camOn;
+      setBtnState($("btnCam"), camOn, "fa-video", "fa-video-slash");
+      toast(camOn ? "Video ON" : "Video OFF");
+    });
+
+    $("btnFlip").addEventListener("click", async ()=>{
+      // Flip camera by reacquiring stream (mobile-friendly)
+      try{
+        if(!localStream) return;
+        facingMode = (facingMode === "user") ? "environment" : "user";
+        camDeviceId = null; // prefer facingMode for flip
+        const newStream = await getLocalMedia();
+        // replace tracks in peer connection
+        const newVideo = newStream.getVideoTracks()[0];
+        const newAudio = newStream.getAudioTracks()[0];
+
+        // Preserve mic/cam enabled state
+        if(newAudio) newAudio.enabled = micOn;
+        if(newVideo) newVideo.enabled = camOn;
+
+        const senders = pc ? pc.getSenders() : [];
+        const vSender = senders.find(s=>s.track && s.track.kind==="video");
+        const aSender = senders.find(s=>s.track && s.track.kind==="audio");
+
+        if(vSender && newVideo) await vSender.replaceTrack(newVideo);
+        if(aSender && newAudio) await aSender.replaceTrack(newAudio);
+
+        // stop old tracks
+        localStream.getTracks().forEach(t=>t.stop());
+        localStream = newStream;
+        $("localVideo").srcObject = localStream;
+
+        // restart STT pipeline if needed
+        if(sendSttEnabled && captionsEnabled){
+          dgStop();
+          dgStart();
         }
-      }, 15000);
 
-      // listen
-      roomRef.on("value", snap=>{
-        const obj = snap.val() || {};
-        renderParticipants(obj);
-      });
-    }
-
-    function renderParticipants(obj){
-      const entries = Object.values(obj).filter(Boolean);
-
-      // sort by joinedAt
-      entries.sort((a,b)=>(Number(a.joinedAt)||0)-(Number(b.joinedAt)||0));
-
-      pCount.textContent = String(Math.max(1, entries.length));
-      participantsList.innerHTML = "";
-
-      // hand queue
-      const hands = entries.filter(p=>p.handRaised);
-      if(hands.length === 0){
-        handQueue.innerHTML = `No hands raised<br/><span style="color:rgba(245,245,245,.35);font-weight:900;font-size:12px;">Queue is empty</span>`;
-      }else{
-        handQueue.innerHTML = hands.map(p=>{
-          const n = escapeHtml(p.name || "User");
-          return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">
-              <span style="font-weight:950;color:rgba(245,245,245,.86)">${n}</span>
-              <span class="pill hand"><i class="fa-solid fa-hand"></i> Hand</span>
-            </div>`;
-        }).join("") + `<div style="height:4px"></div>`;
+        toast("Camera flipped");
+        await enumerateDevices();
+      }catch(e){
+        toast("Flip failed");
       }
+    });
 
-      // list
-      for(const p of entries){
-        const me = p.uid === uid;
-        const initial = (p.name || "U").trim().charAt(0).toUpperCase();
-        const who = me ? "You" : (p.name || "User");
+    $("btnHangup").addEventListener("click", endCall);
 
-        const pills = [];
-        if(me) pills.push(`<span class="pill teacher">YOU</span>`);
-        if(p.handRaised) pills.push(`<span class="pill hand">HAND</span>`);
-        if(p.micMuted) pills.push(`<span class="pill muted">Muted</span>`);
-
-        const row = document.createElement("div");
-        row.className = "pItem";
-        row.innerHTML = `
-          <div class="pLeft">
-            <div class="pAvatar">${escapeHtml(initial)}</div>
-            <div class="pMeta">
-              <div class="pName">${escapeHtml(who)}</div>
-              <div class="pSub"><span class="onlineDot"></span> Online</div>
-            </div>
-          </div>
-          <div class="pBadges">
-            ${pills.join("") || `<span class="pill">Online</span>`}
-          </div>
-        `;
-        participantsList.appendChild(row);
-      }
-    }
-
-    async function pushTranscriptToDB(entry){
-      if(!roomRef) return;
-      const rk = roomKey(profile.room);
-      const ref = db.ref(`/sc/transcripts/${rk}`).push();
-      await ref.set({
-        uid,
-        name: profile.name,
-        original: entry.text || "",
-        translation: entry.translation || "",
-        sttLang: sttLang.value || "",
-        targetLang: targetLang.value || "",
-        ts: Date.now()
-      });
-    }
-
-    /* ============================================================
-      UI actions
-    ============================================================ */
-    function syncLabels(){
-      roomNamePill.textContent = roomKey(profile.room);
-      $("roomNamePill").textContent = roomKey(profile.room);
-      $("roomNamePill").textContent = roomKey(profile.room);
-      $("roomNamePill").textContent = roomKey(profile.room);
-      $("roomNamePill").textContent = roomKey(profile.room);
-      $("roomNamePill").textContent = roomKey(profile.room);
-
-      $("roomNamePill").textContent = roomKey(profile.room);
-      $("roomNamePill").textContent = roomKey(profile.room);
-
-      $("roomNamePill").textContent = roomKey(profile.room);
-
-      $("roomNamePill").textContent = roomKey(profile.room);
-      $("roomNamePill").textContent = roomKey(profile.room);
-
-      $("roomNamePill").textContent = roomKey(profile.room);
-
-      $("roomNamePill").textContent = roomKey(profile.room);
-
-      $("roomNamePill").textContent = roomKey(profile.room);
-
-      $("roomNamePill").textContent = roomKey(profile.room);
-
-      $("roomNamePill").textContent = roomKey(profile.room);
-
-      $("roomNamePill").textContent = roomKey(profile.room);
-
-      $("roomNamePill").textContent = roomKey(profile.room);
-
-      $("roomNamePill").textContent = roomKey(profile.room);
-
-      $("roomNamePill").textContent = roomKey(profile.room);
-
-      $("roomNamePill").textContent = roomKey(profile.room);
-
-      $("roomNamePill").textContent = roomKey(profile.room);
-
-      // language pills
-      langLabel.textContent = langName(sttLang.value || profile.sttLang || "");
-      targetLabel.textContent = langName(targetLang.value || profile.targetLang || "");
-    }
-
-    function startTimer(){
-      startedAt = Date.now();
-      if(timerInt) clearInterval(timerInt);
-      timerInt = setInterval(()=>{
-        const sec = Math.floor((Date.now() - startedAt)/1000);
-        const t = fmtTime(sec);
-        timerEl.textContent = t;
-        timer2El.textContent = t;
-      }, 250);
-    }
-
-    function applyView(view){
-      const isSplit = view === "split";
-      splitBody.classList.toggle("hidden", !isSplit);
-      unifiedBody.classList.toggle("hidden", isSplit);
-      viewTabs.querySelectorAll("button").forEach(b=>{
-        b.classList.toggle("active", b.dataset.view === view);
-      });
-      safeSet(LS.view, view);
-    }
-
-    function toggleExpand(){
-      const on = !document.body.classList.contains("expanded");
-      document.body.classList.toggle("expanded", on);
-      safeSet(LS.expanded, on ? "1" : "0");
-    }
-
-    async function leaveAll(){
-      try{ await stopSTT(true); }catch{}
+    async function endCall(){
+      showLoading("Ending…","Cleaning up","Closing call…");
       try{
-        if(presenceRef) await presenceRef.remove();
-      }catch{}
-      try{
-        roomRef?.off();
-      }catch{}
-      presenceRef = null;
-      roomRef = null;
+        // Stop DG STT
+        dgStop();
 
-      // stop media
-      try{ micStream?.getTracks()?.forEach(t=>t.stop()); }catch{}
-      micStream = null;
-      micTrack = null;
+        // Stop listeners
+        try{ peerPresenceRef?.off(); }catch{}
+        try{ peerCandidatesRef?.off(); }catch{}
+        try{ answerRef?.off(); }catch{}
+        try{ if(captionsRef && captionsListener){ captionsRef.off("child_added", captionsListener); } }catch{}
+        captionsListener = null;
 
-      try{ localCamStream?.getTracks()?.forEach(t=>t.stop()); }catch{}
-      localCamStream = null;
+        // Presence
+        try{ if(presenceRef){ clearInterval(presenceRef._hb); await presenceRef.remove(); } }catch{}
+        presenceRef = null;
 
-      // reset UI
-      prejoin.classList.remove("hidden");
-      setPill("STT idle", "idle");
-      setDockCaption(false);
+        // Media
+        try{ localStream?.getTracks()?.forEach(t=>t.stop()); }catch{}
+        localStream = null;
+        remoteStream = new MediaStream();
+        $("remoteVideo").srcObject = null;
+        $("localVideo").srcObject = null;
 
-      // clear lists
-      participantsList.innerHTML = "";
-      pCount.textContent = "1";
+        // WebRTC
+        try{ pc?.close(); }catch{}
+        pc = null;
 
-      // reset transcript panes (keep vibe)
-      origCol.innerHTML = `<div class="empty" id="emptyOrig">Waiting for speech…</div>`;
-      tranCol.innerHTML = `<div class="empty" id="emptyTran">Translations appear here…</div>`;
-      unifiedCol.innerHTML = `<div class="empty" id="emptyUni">Waiting for speech…</div>`;
+        // Best-effort cleanup signaling (optional)
+        // If caller leaves first, wipe the session so next call can reuse ID cleanly.
+        try{
+          if(role==="caller"){
+            await webrtcRef.remove();
+          }
+        }catch{}
 
-      // timer
-      try{ clearInterval(timerInt); }catch{}
-      timerEl.textContent = "00:00";
-      timer2El.textContent = "00:00";
-    }
+        clearInterval(timerInt); timerInt = null;
+        callStartAt = null;
 
-    /* ============================================================
-      Device enumeration
-    ============================================================ */
-    async function enumerateMics(){
-      // request once to get labels
-      try{
-        const tmp = await navigator.mediaDevices.getUserMedia({audio:true, video:true});
-        tmp.getTracks().forEach(t=>t.stop());
-      }catch{}
+        // UI back
+        $("callScreen").classList.add("hidden");
+        $("prejoin").classList.remove("hidden");
+        document.body.classList.remove("no-scroll");
 
-      const devs = await navigator.mediaDevices.enumerateDevices();
-      const mics = devs.filter(d=>d.kind==="audioinput");
-      const cams = devs.filter(d=>d.kind==="videoinput");
-
-      pjMic.innerHTML = mics.map((d,i)=>`<option value="${d.deviceId}">${escapeHtml(d.label || ("Microphone "+(i+1)))}</option>`).join("");
-      audioSource.innerHTML = pjMic.innerHTML;
-
-      // restore selection
-      const saved = safeGet(LS.mic, "");
-      if(saved && mics.some(m=>m.deviceId===saved)){
-        pjMic.value = saved;
-        audioSource.value = saved;
-      }
-
-      // camera preview (optional)
-      if(cams.length > 0){
-        await ensureCamPreview();
+        hideLoading();
+        toast("Call ended");
+      }catch(e){
+        hideLoading();
+        toast("End call error");
       }
     }
 
-    function populateLangSelects(){
-      const opts = LANGS.map(l=>`<option value="${l.code}">${escapeHtml(l.name)}</option>`).join("");
-      pjSttLang.innerHTML = opts;
-      pjTargetLang.innerHTML = opts;
-
-      sttLang.innerHTML = opts;
-      targetLang.innerHTML = opts;
-
-      // restore
-      const sStt = safeGet(LS.sttLang, "auto");
-      const sTgt = safeGet(LS.tgtLang, "nl-BE");
-
-      pjSttLang.value = sStt;
-      pjTargetLang.value = sTgt;
-
-      sttLang.value = sStt;
-      targetLang.value = sTgt;
-
-      // labels
-      syncLabels();
-    }
-
-    /* ============================================================
-      Event wiring
-    ============================================================ */
-    pjCheck.addEventListener("click", async ()=>{
-      await enumerateMics();
-      toast("Devices checked");
+    /* =========================
+       Defensive: unload cleanup
+    ========================= */
+    window.addEventListener("beforeunload", ()=>{
+      try{ dgStop(); }catch{}
+      try{ pc?.close(); }catch{}
+      try{ localStream?.getTracks()?.forEach(t=>t.stop()); }catch{}
+      try{ if(presenceRef){ clearInterval(presenceRef._hb); presenceRef.remove(); } }catch{}
     });
 
-    pjJoin.addEventListener("click", async ()=>{
-      const name = (pjName.value || "").trim() || "User";
-      const room = (pjRoom.value || "").trim() || "ORBIT";
-      const micId = pjMic.value || "";
-      const sttC = pjSttLang.value || "auto";
-      const tgtC = pjTargetLang.value || "nl-BE";
-      const key  = (pjOpenAI.value || "").trim();
-
-      // persist
-      safeSet(LS.name, name);
-      safeSet(LS.room, room);
-      safeSet(LS.mic, micId);
-      safeSet(LS.sttLang, sttC);
-      safeSet(LS.tgtLang, tgtC);
-      safeSet(LS.openai, key);
-
-      profile.name = name;
-      profile.room = room;
-      profile.sttLang = sttC;
-      profile.targetLang = tgtC;
-
-      // sync main controls
-      audioSource.value = micId;
-      sttLang.value = sttC;
-      targetLang.value = tgtC;
-
-      // join flow
-      prejoin.classList.add("hidden");
-
-      // timer
-      startTimer();
-
-      // presence
-      await ensureAuth();
-      await joinPresence(room, name, sttC, tgtC);
-
-      // set labels
-      roomNamePill.textContent = roomKey(room);
-      syncLabels();
-
-      // ensure mic/cam prepared
-      await ensureCamPreview();
-      await ensureMicStream(micId);
-
-      // Start caption by default (matches screenshot “Caption” active)
-      setDockCaption(true);
-      setPill("STT idle", "idle");
-      // do NOT auto-start STT until user taps caption (safer), but keep button active
-      // If you want auto-start, uncomment:
-      // await startSTT();
-    });
-
-    // main dropdowns sync + persist
-    audioSource.addEventListener("change", async ()=>{
-      safeSet(LS.mic, audioSource.value);
-      pjMic.value = audioSource.value;
-      if(isTranscribing){
-        await stopSTT(true);
-        await ensureMicStream(audioSource.value);
-        await startSTT();
-      }else{
-        await ensureMicStream(audioSource.value);
+    /* =========================
+       Auto-generate Call ID on Create tab
+    ========================= */
+    (function initCreateId(){
+      const p = new URLSearchParams(location.search);
+      const id = (p.get("call")||"").trim().toUpperCase();
+      if(!id){
+        $("callIdOut").value = genId();
       }
-    });
-
-    sttLang.addEventListener("change", async ()=>{
-      safeSet(LS.sttLang, sttLang.value);
-      pjSttLang.value = sttLang.value;
-      syncLabels();
-      if(presenceRef) presenceRef.child("sttLang").set(sttLang.value);
-      if(isTranscribing){
-        await stopSTT(true);
-        await startSTT();
-      }
-    });
-
-    targetLang.addEventListener("change", async ()=>{
-      safeSet(LS.tgtLang, targetLang.value);
-      pjTargetLang.value = targetLang.value;
-      syncLabels();
-      if(presenceRef) presenceRef.child("targetLang").set(targetLang.value);
-    });
-
-    // tabs
-    viewTabs.addEventListener("click", (e)=>{
-      const b = e.target.closest("button[data-view]");
-      if(!b) return;
-      applyView(b.dataset.view);
-    });
-
-    // expand
-    btnExpand.addEventListener("click", toggleExpand);
-
-    // autoplay
-    btnAutoPlay.addEventListener("click", ()=>{
-      autoPlay = !autoPlay;
-      btnAutoPlay.classList.toggle("active", autoPlay);
-      safeSet(LS.autoplay, autoPlay ? "1":"0");
-    });
-
-    // caption toggle (top + dock)
-    async function toggleCaption(){
-      if(isTranscribing){
-        await stopSTT(false);
-        setDockCaption(false);
-        setPill("STT idle", "idle");
-      }else{
-        setDockCaption(true);
-        await startSTT();
-      }
-    }
-    btnCC.addEventListener("click", toggleCaption);
-    btnCaption.addEventListener("click", toggleCaption);
-
-    // mic mute (presence only + affects mic track enabled)
-    btnMic.addEventListener("click", ()=>{
-      const muted = btnMic.classList.toggle("muted");
-      setMuted(btnMic, muted);
-      btnMic.querySelector("i").className = muted ? "fa-solid fa-microphone-slash" : "fa-solid fa-microphone";
-      if(micTrack) micTrack.enabled = !muted;
-      if(presenceRef) presenceRef.child("micMuted").set(muted);
-    });
-
-    // cam off (presence only + affects camera track enabled)
-    btnCam.addEventListener("click", ()=>{
-      const off = btnCam.classList.toggle("muted");
-      setMuted(btnCam, off);
-      btnCam.querySelector("i").className = off ? "fa-solid fa-video-slash" : "fa-solid fa-video";
-      if(localCamStream){
-        localCamStream.getVideoTracks().forEach(t=>t.enabled = !off);
-      }
-      if(presenceRef) presenceRef.child("camOff").set(off);
-    });
-
-    // raise hand
-    btnHand.addEventListener("click", ()=>{
-      handRaised = !handRaised;
-      btnHand.classList.toggle("active", handRaised);
-      if(presenceRef) presenceRef.child("handRaised").set(handRaised);
-      safeSet(LS.hand, handRaised ? "1":"0");
-    });
-
-    // placeholders
-    btnShare.addEventListener("click", ()=> toast("Share (placeholder)"));
-    btnBoard.addEventListener("click", ()=> toast("Board (placeholder)"));
-
-    // record (visual only)
-    btnRecord.addEventListener("click", ()=>{
-      btnRecord.classList.toggle("active");
-      toast("Record toggle (placeholder)");
-    });
-
-    // leave
-    btnLeave.addEventListener("click", leaveAll);
-    btnLeaveTop.addEventListener("click", leaveAll);
-
-    // menu (placeholder)
-    btnMenu.addEventListener("click", ()=> toast("Menu (placeholder)"));
-
-    /* ============================================================
-      Boot
-    ============================================================ */
-    (async function boot(){
-      // restore
-      pjName.value = safeGet(LS.name, "");
-      pjRoom.value = safeGet(LS.room, "ORBIT");
-      pjOpenAI.value = safeGet(LS.openai, "");
-
-      autoPlay = safeGet(LS.autoplay, "0") === "1";
-      btnAutoPlay.classList.toggle("active", autoPlay);
-
-      const view = safeGet(LS.view, "split");
-      applyView(view);
-
-      const exp = safeGet(LS.expanded, "0") === "1";
-      document.body.classList.toggle("expanded", exp);
-
-      handRaised = safeGet(LS.hand, "0") === "1";
-      btnHand.classList.toggle("active", handRaised);
-
-      populateLangSelects();
-      await enumerateMics();
-      await ensureCamPreview();
-
-      // update labels in pills (prejoin default)
-      roomNamePill.textContent = roomKey(pjRoom.value || "ORBIT");
-      syncLabels();
-
-      // Prejoin stays open until Enter classroom
-      setPill("STT idle", "idle");
     })();
+
+    /* =========================
+       Default: captions OFF, translate ON, send STT OFF
+       You enable them via Translator sheet.
+    ========================= */
   </script>
 </body>
 </html>
