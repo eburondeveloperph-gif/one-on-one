@@ -1,2032 +1,1932 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <meta name="description" content="Real-time multilingual video classroom with live transcription and translation - 10x more robust than Zoom"/>
-  <meta name="theme-color" content="#3498db"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="Success Class"/>
-  <link rel="manifest" href="manifest.json"/>
-  <link rel="icon" type="image/svg+xml" href="assets/logo.svg"/>
-  <link rel="apple-touch-icon" href="assets/icon-192.png"/>
-  <title>Success Class – Real-time Translation Classroom</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/10.9.0/jsrsasign-all-min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
-  <script type="module">
-    import { StreamVideoClient } from 'https://esm.sh/@stream-io/video-client@latest';
-    window.StreamVideoClient = StreamVideoClient;
-  </script>
-  <style>
-    :root{
-      --bg:#0d0d0d;--surface:#161616;--surface2:#1e1e1e;--surface3:#282828;--border:#333;--text:#f5f5f5;--text-muted:#888;--accent:#3498db;
-      --accent2:#2980b9;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;--orange:#f97316;--yellow:#eab308;--cyan:#1abc9c
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;overflow:hidden;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:pan-y}
-    @media(max-width:1024px){body{overflow-y:auto;overflow-x:hidden}}
-    button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
-    input,select{font:inherit}
-    ::-webkit-scrollbar{width:6px;height:6px}
-    ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messenger Video Call with AI | Complete SDK</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
 
-    /* LOADING / AUTH CHECK */
-    .loading-overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;text-align:center}
-    .loading-card{background:var(--surface);border-radius:20px;padding:28px;max-width:420px;width:100%;box-shadow:0 25px 50px rgba(0,0,0,.5)}
-    .loading-icon{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--cyan));display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px}
-    .loading-title{font-size:18px;font-weight:700;margin-bottom:8px}
-    .loading-text{font-size:14px;color:var(--text-muted);line-height:1.5}
-    .loading-actions{margin-top:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-    .loading-btn{padding:10px 16px;border-radius:10px;background:var(--accent);color:#fff;text-decoration:none;font-size:13px;font-weight:600}
-    .loading-btn.secondary{background:var(--surface2);color:var(--text)}
-    .loading-overlay.hidden{display:none}
-    .is-hidden{display:none}
-    .text-muted-small{font-size:12px;color:var(--text-muted)}
+        :root {
+            --messenger-blue: #0084ff;
+            --messenger-blue-hover: #0073e6;
+            --messenger-dark: #050505;
+            --messenger-gray: #3a3b3c;
+            --messenger-light-gray: #b0b3b8;
+            --messenger-bg: #18191a;
+            --messenger-card: #242526;
+            --danger-red: #e74c3c;
+            --success-green: #2ecc71;
+            --warning-yellow: #f39c12;
+            --translate-purple: #9b59b6;
+            --transcribe-teal: #1abc9c;
+            --ai-orange: #e67e22;
+            --recording-red: #ff4757;
+        }
 
-    /* QUIZ MODAL STYLES */
-    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px}
-    .modal-content{background:var(--surface);border-radius:16px;max-width:500px;width:100%;box-shadow:0 25px 50px rgba(0,0,0,0.5)}
-    .modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-    .modal-header h3{font-size:18px;display:flex;align-items:center;gap:8px}
-    .modal-close{background:none;border:none;font-size:24px;color:var(--text-muted);cursor:pointer;padding:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px}
-    .modal-close:hover{background:var(--surface2)}
-    .modal-body{padding:24px}
-    .quiz-link-container{margin:16px 0}
-    .quiz-link-container label{display:block;font-size:13px;color:var(--text-muted);margin-bottom:8px}
-    .link-input-group{display:flex;gap:8px}
-    .link-input-group input{flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:monospace;font-size:14px}
-    .btn-copy{padding:12px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
-    .btn-copy:hover{background:var(--accent2)}
-    .quiz-info{font-size:13px;color:var(--text-muted);margin-top:12px}
-    .modal-actions{padding:16px 24px 24px;display:flex;gap:12px;justify-content:flex-end}
-    .btn-primary,.btn-secondary{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
-    .btn-primary{background:var(--accent);color:#fff}
-    .btn-primary:hover{background:var(--accent2)}
-    .btn-secondary{background:var(--surface2);color:var(--text)}
-    .btn-secondary:hover{background:var(--surface3)}
+        body {
+            background-color: var(--messenger-bg);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    /* PRE-JOIN */
-    .prejoin-overlay{position:fixed;inset:0;background:#000;background-image:radial-gradient(circle at 50% 0%,#1c1c1e 0%,#000 100%);display:none;z-index:9998;padding:20px;overflow-y:auto}
-    .prejoin-overlay.active{display:flex;align-items:center;justify-content:center}
-    .prejoin-container{width:100%;max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start;background:rgba(28,28,30,0.85);border:1px solid rgba(255,255,255,0.15);border-radius:30px;padding:35px;box-shadow:0 30px 60px rgba(0,0,0,0.5);backdrop-filter:blur(40px)}
-    @media(max-width:900px){.prejoin-container{grid-template-columns:1fr;max-width:500px}}
-    .prejoin-preview{display:flex;flex-direction:column;gap:20px;padding:0;background:transparent}
-    .prejoin-video-wrapper{position:relative;width:100%;aspect-ratio:16/9;background:#121212;border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,0.15);box-shadow:0 20px 40px rgba(0,0,0,0.3)}
-    .prejoin-video-wrapper video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-    .prejoin-video-off{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#121212;color:var(--text-muted)}
-    .prejoin-video-off i{font-size:48px;margin-bottom:12px}
-    .prejoin-video-off.hidden{display:none}
-    .prejoin-controls{display:flex;justify-content:center;gap:15px;background:rgba(0,0,0,0.6);padding:10px 20px;border-radius:50px;backdrop-filter:blur(10px)}
-    .prejoin-toggle{width:45px;height:45px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:18px;transition:.2s;color:#fff}
-    .prejoin-toggle:hover{background:rgba(255,255,255,0.2)}
-    .prejoin-toggle.off{background:var(--red);color:#fff}
-    .prejoin-form{display:flex;flex-direction:column;padding:0;background:transparent}
-    .prejoin-form h2{font-size:28px;font-weight:700;margin-bottom:10px}
-    .prejoin-form>p{color:var(--text-muted);margin-bottom:24px;font-size:15px}
-    .prejoin-user{display:flex;align-items:center;gap:12px;padding:16px;background:rgba(255,255,255,0.05);border-radius:12px;margin-bottom:20px;border:1px solid rgba(255,255,255,0.1)}
-    .prejoin-user-avatar{width:48px;height:48px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px}
-    .prejoin-user-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
-    .prejoin-user-info h4{font-size:16px}
-    .prejoin-user-info p{font-size:13px;color:var(--text-muted)}
-    .prejoin-room-input{display:flex;gap:8px;margin-bottom:16px}
-    .prejoin-room-prefix{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px 16px;font-weight:700;color:var(--accent);font-size:12px;letter-spacing:.5px}
-    .prejoin-room-input input{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px 16px;color:var(--text);font-size:15px;font-weight:600;letter-spacing:2px;text-transform:uppercase}
-    .prejoin-room-input input:focus{outline:none;border-color:var(--accent);background:rgba(255,255,255,0.1)}
-    .device-select-group{margin-bottom:16px}
-    .device-select-group label{display:block;font-size:12px;text-transform:uppercase;color:var(--text-muted);font-weight:700;margin-bottom:8px;letter-spacing:.5px}
-    .device-select-group select{width:100%;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:var(--text);font-size:15px}
-    .device-select-group select:focus{border-color:var(--accent);background:rgba(255,255,255,0.1)}
-    .prejoin-form .btn-primary{margin-top:10px;padding:18px;border-radius:16px;font-size:17px;font-weight:600;background:var(--green);color:#000}
-    .prejoin-form .btn-primary:hover{background:#a1cc4a}
-    .btn-logout{margin-top:16px;padding:12px;border:1px solid rgba(255,255,255,0.15);border-radius:12px;color:var(--text-muted);font-size:14px;background:transparent}
-    .btn-logout:hover{background:rgba(255,255,255,0.08);color:var(--text)}
+        /* Main container */
+        .call-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: var(--messenger-dark);
+            overflow: hidden;
+        }
 
-    /* MAIN APP */
-    .app-container{display:none;height:100vh;height:100dvh;flex-direction:column}
-    .app-container.active{display:flex}
+        /* Status bar */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 16px 8px;
+            background-color: var(--messenger-card);
+            border-bottom: 1px solid var(--messenger-gray);
+            z-index: 100;
+        }
 
-    /* TOP HEADER - STICKY */
-    .top-header{
-      display:flex;align-items:center;justify-content:space-between;padding:10px 16px;
-      background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;gap:12px;
-      position:sticky;top:0;z-index:100;backdrop-filter:blur(10px);
-    }
-    .header-left{display:flex;align-items:center;gap:12px}
-    .header-logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px}
-    .header-logo .logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--cyan));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
-    .room-badge{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--surface2);border-radius:8px;font-size:12px}
-    .room-badge-id{font-family:monospace;font-weight:600;color:var(--accent);letter-spacing:1px}
-    .room-badge-sep{color:var(--border)}
-    .room-badge i{color:var(--green)}
-    .header-center{flex:1;display:flex;justify-content:center}
-    .meeting-timer{display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--surface2);border-radius:8px;font-size:13px;font-family:monospace}
-    .meeting-timer i{color:var(--red)}
-    .meeting-timer.recording i{animation:blink 1s infinite}
-    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-    .header-right{display:flex;align-items:center;gap:8px}
-    .header-btn{width:40px;height:40px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:16px;transition:.15s;position:relative}
-    .header-btn:hover{background:var(--surface3)}
-    .header-btn.active{background:var(--accent);color:#fff}
-    .header-btn.danger{background:var(--red);color:#fff}
-    .header-btn-badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;background:var(--accent);border-radius:9px;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;padding:0 5px}
+        .time {
+            font-weight: 600;
+            font-size: 15px;
+        }
 
-    /* HEADER MENU DROPDOWN */
-    .header-menu-container{position:relative}
-    .header-menu{position:absolute;top:calc(100% + 8px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;min-width:200px;padding:8px;box-shadow:0 10px 40px rgba(0,0,0,.5);z-index:1000;opacity:0;visibility:hidden;transform:translateY(-8px);transition:.15s}
-    .header-menu.active{opacity:1;visibility:visible;transform:translateY(0)}
-    .header-menu-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;font-size:14px;width:100%;text-align:left;transition:.15s}
-    .header-menu-item:hover{background:var(--surface2)}
-    .header-menu-item i{width:20px;text-align:center;font-size:15px;color:var(--text-muted)}
-    .header-menu-item span{flex:1}
-    .header-menu-item .menu-badge{background:var(--accent);color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
-    .header-menu-item.active i{color:var(--accent)}
-    .header-menu-item.danger{color:var(--red)}
-    .header-menu-item.danger i{color:var(--red)}
-    .header-menu-divider{height:1px;background:var(--border);margin:8px 0}
-    @media(max-width:600px){.header-logo span{display:none}.room-badge{display:none}.meeting-timer span{display:none}}
+        .status-icons {
+            display: flex;
+            gap: 6px;
+        }
 
-    /* MAIN CONTENT */
-    .main-content{flex:1;display:flex;overflow:hidden;position:relative;padding-bottom:80px}
+        .status-icons i {
+            font-size: 14px;
+        }
 
-    /* VIDEO AREA */
-    .video-area{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
-    .video-grid{flex:1;display:grid;gap:6px;padding:8px;overflow:hidden}
-    .video-grid.auto-layout{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));grid-auto-rows:1fr}
-    .video-grid[data-count="1"]{grid-template-columns:1fr}
-    .video-grid[data-count="2"]{grid-template-columns:repeat(2,1fr)}
-    .video-grid[data-count="3"],.video-grid[data-count="4"]{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}
-    .video-grid[data-count="5"],.video-grid[data-count="6"]{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr)}
-    .video-grid[data-count="7"],.video-grid[data-count="8"],.video-grid[data-count="9"]{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr)}
-    .video-grid.pinned-view{grid-template-columns:1fr 280px;grid-template-rows:1fr}
-    .video-grid.pinned-view .video-tile.pinned{grid-row:1;grid-column:1}
-    .video-grid.pinned-view .video-tiles-strip{grid-row:1;grid-column:2;display:flex;flex-direction:column;gap:6px;overflow-y:auto}
-    @media(max-width:768px){.video-grid.pinned-view{grid-template-columns:1fr;grid-template-rows:1fr 120px}.video-grid.pinned-view .video-tiles-strip{flex-direction:row;overflow-x:auto}.video-grid.pinned-view .video-tiles-strip .video-tile{min-width:160px;height:100%}}
-    .video-tile{position:relative;background:var(--surface);border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center}
-    .video-tile video{width:100%;height:100%;object-fit:cover}
-    .video-tile.mirror video{transform:scaleX(-1)}
-    .video-tile-overlay{position:absolute;inset:0;pointer-events:none}
-    .video-tile-top{position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;pointer-events:auto}
-    .video-tile-actions{display:flex;gap:4px;opacity:0;transition:.2s}
-    .video-tile:hover .video-tile-actions{opacity:1}
-    .video-tile-action{width:28px;height:28px;border-radius:6px;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-size:12px;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
-    .video-tile-action:hover{background:var(--accent)}
-    .video-tile-action.pinned{background:var(--accent)}
-    .video-tile-status{display:flex;gap:4px}
-    .video-tile-status span{width:24px;height:24px;border-radius:6px;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-size:10px;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
-    .video-tile-status .muted{color:var(--red)}
-    .video-tile-bottom{position:absolute;bottom:0;left:0;right:0;padding:8px 12px;background:linear-gradient(transparent,rgba(0,0,0,.7));display:flex;align-items:center;justify-content:space-between}
-    .video-tile-name{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500}
-    .video-tile-name .speaking{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse-speak 1s infinite}
-    @keyframes pulse-speak{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.7}}
-    .video-placeholder{width:80px;height:80px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700}
+        /* Call header */
+        .call-header {
+            padding: 16px;
+            text-align: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            position: relative;
+            z-index: 50;
+        }
 
-    /* SHARED CONTENT */
-    .shared-content{display:none;position:absolute;inset:8px;background:var(--surface);border-radius:12px;overflow:hidden;z-index:5}
-    .shared-content.active{display:flex;flex-direction:column}
-    .shared-content-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface2)}
-    .shared-content-header h4{font-size:14px;display:flex;align-items:center;gap:8px}
-    .shared-content-header h4 i{color:var(--accent)}
-    .shared-content-body{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .shared-content-body video,.shared-content-body canvas{max-width:100%;max-height:100%;object-fit:contain}
-    #whiteboardCanvas{background:#fff;cursor:crosshair}
-    .whiteboard-tools{display:flex;gap:8px;padding:8px 16px;background:var(--surface2);border-top:1px solid var(--border)}
-    .whiteboard-tool{width:36px;height:36px;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px}
-    .whiteboard-tool:hover{background:var(--surface3)}
-    .whiteboard-tool.active{background:var(--accent);color:#fff}
-    .whiteboard-tool input[type="color"]{width:100%;height:100%;border:none;padding:0;cursor:pointer;border-radius:8px}
+        .call-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
 
-    /* STUDENTS PANEL */
-    .students-panel{width:280px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s ease;position:absolute;right:0;top:0;bottom:0;z-index:20}
-    .students-panel.open{transform:translateX(0)}
-    .panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border)}
-    .panel-header h3{font-size:16px;display:flex;align-items:center;gap:8px}
-    .panel-header h3 i{color:var(--accent)}
-    .panel-close{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center}
-    .panel-close:hover{background:var(--surface2)}
-    .students-list{flex:1;overflow-y:auto;padding:12px}
-    .student-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;margin-bottom:8px;background:var(--surface2)}
-    .student-item:hover{background:var(--surface3)}
-    .student-avatar{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
-    .student-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
-    .student-info{flex:1;min-width:0}
-    .student-info h5{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .student-info p{font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:4px}
-    .student-info p i{font-size:8px}
-    .student-info p .online{color:var(--green)}
-    .student-actions{display:flex;gap:4px}
-    .student-action{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;background:var(--surface)}
-    .student-action:hover{background:var(--accent);color:#fff}
-    .student-action.muted{color:var(--red)}
-    .student-hand{color:var(--yellow);animation:wave 0.5s ease-in-out infinite alternate}
-    @keyframes wave{0%{transform:rotate(-10deg)}100%{transform:rotate(10deg)}}
+        .ai-badge {
+            background: linear-gradient(135deg, var(--transcribe-teal), var(--translate-purple));
+            color: white;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
 
-    /* CHAT PANEL */
-    .chat-panel{width:340px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s ease;position:absolute;right:0;top:0;bottom:0;z-index:18}
-    .chat-panel.open{transform:translateX(0)}
-    .chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
-    .chat-message{max-width:85%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.4;word-wrap:break-word}
-    .chat-message.sent{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
-    .chat-message.received{align-self:flex-start;background:var(--surface2);border-bottom-left-radius:4px}
-    .chat-message-header{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:11px;opacity:0.8}
-    .chat-message-header .sender{font-weight:600}
-    .chat-message-header .time{opacity:0.7}
-    .chat-input-container{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px}
-    .chat-input{flex:1;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:24px;color:var(--text);font-size:14px;resize:none}
-    .chat-input:focus{outline:none;border-color:var(--accent)}
-    .chat-send{width:44px;height:44px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;flex-shrink:0}
-    .chat-send:hover{background:var(--accent2)}
-    .chat-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-muted);text-align:center;padding:20px}
-    .chat-empty i{font-size:48px;margin-bottom:12px;opacity:0.5}
-    @media(max-width:768px){.chat-panel{position:fixed;width:100%;height:70vh;bottom:0;left:0;right:0;top:auto;transform:translateY(100%);border-left:none;border-top:1px solid var(--border);border-radius:20px 20px 0 0}.chat-panel.open{transform:translateY(0)}}
+        .call-status {
+            font-size: 14px;
+            color: var(--messenger-light-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
 
-    /* RAISE HAND */
-    .control-btn.hand-raised{background:var(--yellow);color:#000}
-    .control-btn.hand-raised i{animation:wave 0.5s ease-in-out infinite alternate}
-    .video-tile-hand{position:absolute;top:8px;right:8px;width:32px;height:32px;background:var(--yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;animation:pulse 1s ease-in-out infinite;z-index:5}
-    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+        /* Video containers */
+        .video-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #000;
+        }
 
-    /* TRANSCRIPT PANEL */
-    .transcript-panel{width:360px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;transform:translateX(100%);transition:width .3s ease,transform .3s ease;position:absolute;right:0;top:0;bottom:0;z-index:15}
-    .transcript-panel.open{transform:translateX(0)}
-    .transcript-panel.expanded{width:50vw}
-    @media(max-width:768px){.transcript-panel{width:100%}.transcript-panel.expanded{width:100%}}
-    .transcript-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap}
-    .transcript-header-left{display:flex;align-items:center;gap:10px}
-    .transcript-header-left h3{font-size:15px;display:flex;align-items:center;gap:8px}
-    .transcript-header-left h3 i{color:var(--accent)}
-    .btn-auto-tts{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--surface2);border-radius:8px;font-size:12px;font-weight:500;transition:.15s}
-    .btn-auto-tts:hover{background:var(--surface3)}
-    .btn-auto-tts i{font-size:14px}
-    .btn-auto-tts.active{background:var(--green);color:#fff}
-    .btn-auto-tts .queue-count{background:var(--accent);padding:1px 6px;border-radius:8px;font-size:10px;display:none}
-    .btn-auto-tts .queue-count.show{display:inline}
-    .transcript-header-right{display:flex;align-items:center;gap:6px}
-    .transcript-view-toggle{display:flex;background:var(--surface2);border-radius:6px;padding:2px}
-    .transcript-view-toggle button{padding:5px 10px;border-radius:5px;font-size:11px;font-weight:500;color:var(--text-muted)}
-    .transcript-view-toggle button.active{background:var(--accent);color:#fff}
-    .transcript-expand{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px}
-    .transcript-expand:hover{background:var(--surface2)}
-    .transcript-content{flex:1;overflow:hidden;display:flex;flex-direction:column}
-    .transcript-unified{flex:1;overflow-y:auto;padding:12px;scroll-behavior:smooth}
-    .transcript-unified.hidden{display:none}
-    .transcript-entry{margin-bottom:16px;padding:14px;background:var(--surface2);border-radius:12px}
-    .transcript-entry-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-    .transcript-entry-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
-    .transcript-entry-name{font-weight:600;font-size:13px}
-    .transcript-entry-time{font-size:11px;color:var(--text-muted);margin-left:auto}
-    .transcript-entry-original{font-size:13px;line-height:1.5;padding:10px 12px;background:var(--surface);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--text-muted);color:var(--text-muted)}
-    .transcript-entry-translation{font-size:14px;line-height:1.5;padding:10px 12px;background:rgba(52,152,219,.1);border-radius:8px;border-left:3px solid var(--accent)}
-    .transcript-entry-actions{display:flex;gap:8px;margin-top:10px}
-    .btn-play-entry{display:flex;align-items:center;gap:5px;padding:6px 12px;background:var(--surface);border-radius:6px;font-size:11px;transition:.15s}
-    .btn-play-entry:hover{background:var(--accent);color:#fff}
-    .btn-play-entry.playing{background:var(--green);color:#fff}
-    .transcript-split{flex:1;display:none;overflow:hidden}
-    .transcript-split.active{display:flex}
-    .transcript-column{flex:1;display:flex;flex-direction:column;min-width:0}
-    .transcript-column:first-child{border-right:1px solid var(--border)}
-    .transcript-column-header{padding:10px 14px;background:var(--surface2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)}
-    .transcript-column-content{flex:1;overflow-y:auto;padding:12px;scroll-behavior:smooth}
-    .transcript-line{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
-    .transcript-line:last-child{border-bottom:none}
-    .transcript-line-header{display:flex;align-items:center;gap:6px;margin-bottom:6px}
-    .transcript-line-avatar{width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600}
-    .transcript-line-name{font-size:11px;font-weight:600}
-    .transcript-line-time{font-size:10px;color:var(--text-muted);margin-left:auto}
-    .transcript-line-text{font-size:13px;line-height:1.5}
-    .transcript-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;color:var(--text-muted)}
-    .transcript-empty i{font-size:48px;margin-bottom:16px;opacity:.5}
-    .transcript-empty p{font-size:14px}
+        .remote-video-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
 
-    /* SETTINGS MODAL */
-    .settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
-    .settings-overlay.open{display:flex}
-    .settings-modal{background:var(--surface);border-radius:20px;width:100%;max-width:600px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column}
-    .settings-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border)}
-    .settings-header h2{font-size:20px;display:flex;align-items:center;gap:10px}
-    .settings-header h2 i{color:var(--accent)}
-    .settings-close{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px}
-    .settings-close:hover{background:var(--surface2)}
-    .settings-tabs{display:flex;padding:0 24px;gap:4px;border-bottom:1px solid var(--border);overflow-x:auto}
-    .settings-tab{padding:14px 20px;font-size:14px;font-weight:500;color:var(--text-muted);border-bottom:2px solid transparent;white-space:nowrap}
-    .settings-tab:hover{color:var(--text)}
-    .settings-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-    .settings-content{flex:1;overflow-y:auto;padding:24px}
-    .settings-section{display:none}
-    .settings-section.active{display:block}
-    .settings-section h4{font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text-muted);display:flex;align-items:center;gap:8px}
-    .settings-section h4 i{font-size:14px}
-    .setting-row{margin-bottom:20px}
-    .setting-row label{display:block;font-size:13px;font-weight:500;margin-bottom:8px}
-    .setting-row select,.setting-row input[type="text"]{width:100%;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px}
-    .setting-row select:focus,.setting-row input:focus{outline:none;border-color:var(--accent)}
-    .setting-row-inline{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
-    .setting-row-inline label{margin-bottom:0}
-    .toggle-switch{width:48px;height:26px;background:var(--surface2);border-radius:13px;position:relative;cursor:pointer;transition:.2s}
-    .toggle-switch::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;background:var(--text);border-radius:50%;transition:.2s}
-    .toggle-switch.active{background:var(--green)}
-    .toggle-switch.active::after{left:25px}
-    .settings-footer{display:flex;justify-content:flex-end;gap:12px;padding:16px 24px;border-top:1px solid var(--border)}
-    .btn-settings-save{padding:12px 24px;background:var(--accent);color:#fff;border-radius:10px;font-weight:600}
-    .btn-settings-save:hover{background:var(--accent2)}
+        .remote-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror effect for realism */
+        }
 
-    /* CONTROL BAR - STICKY BOTTOM */
-    .control-bar{
-      display:flex;align-items:center;justify-content:center;padding:16px 20px;
-      background:var(--surface);border-top:1px solid var(--border);gap:10px;flex-shrink:0;
-      position:sticky;bottom:0;z-index:100;backdrop-filter:blur(10px);
-    }
-    .control-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 20px;border-radius:14px;background:var(--surface2);transition:.15s;min-width:80px}
-    .control-btn:hover{background:var(--surface3)}
-    .control-btn i{font-size:22px}
-    .control-btn span{font-size:11px;color:var(--text-muted);font-weight:500}
-    .control-btn.active{background:var(--accent)}
-    .control-btn.active span{color:#fff}
-    .control-btn.muted{background:var(--red)}
-    .control-btn.muted span{color:#fff}
-    .control-btn.danger{background:var(--red)}
-    .control-btn.danger:hover{background:#dc2626}
-    .control-btn.danger span{color:#fff}
-    .control-divider{width:1px;height:44px;background:var(--border);margin:0 10px}
-    .control-bar-left,.control-bar-right{position:absolute;display:flex;align-items:center;gap:10px}
-    .control-bar-left{left:20px}
-    .control-bar-right{right:20px}
-    @media(max-width:768px){
-      .control-bar{padding:18px 16px;gap:8px}
-      .control-btn{min-width:70px;padding:12px 16px}
-      .control-btn i{font-size:20px}
-      .control-btn span{font-size:10px;display:block}
-      .control-divider{display:none}
-      .control-bar-left,.control-bar-right{position:static}
-      .control-bar{flex-wrap:wrap;gap:8px;justify-content:space-around;padding-top:14px;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
-    }
+        .local-video-container {
+            position: absolute;
+            bottom: 20px;
+            right: 16px;
+            width: 100px;
+            height: 150px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 3px solid white;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            z-index: 20;
+            transform: scaleX(-1); /* Mirror effect */
+            transition: all 0.3s ease;
+        }
 
-    /* TOAST */
-    .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);padding:14px 24px;border-radius:12px;font-size:14px;z-index:2000;display:none;animation:fadeUp .3s}
-    .toast.show{display:block}
-    @keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+        .local-video-container:hover {
+            transform: scaleX(-1) scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+        }
 
-    /* MOBILE & TABLET RESPONSIVE - PORTRAIT */
-    @media(max-width:1024px) and (orientation:portrait){
-      .app-container{height:auto;min-height:100vh;min-height:100dvh;overflow-y:auto}
-      .main-content{flex-direction:column;overflow:visible;min-height:calc(100vh - 160px);min-height:calc(100dvh - 160px)}
-      .video-area{flex:none;height:auto;min-height:200px}
-      .video-grid{height:auto;min-height:180px;max-height:40vh;overflow:hidden}
-      .video-grid.auto-layout{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));grid-auto-rows:minmax(100px,1fr)}
-      .video-grid[data-count="1"]{max-height:35vh}
-      .video-grid[data-count="2"]{grid-template-columns:repeat(2,1fr)}
-      .video-grid[data-count="3"],.video-grid[data-count="4"]{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}
-      .video-tile{min-height:80px}
-      .video-tile-name{font-size:11px}
-      .video-placeholder{width:50px;height:50px;font-size:20px}
-      
-      /* Mobile Transcript Panel - Below Video Grid */
-      .transcript-panel{position:relative;width:100%;height:auto;min-height:0;max-height:0;transform:none;border-left:none;border-top:1px solid var(--border);transition:max-height .3s ease,min-height .3s ease;overflow:hidden}
-      .transcript-panel.open{max-height:55vh;min-height:45vh;flex:1}
-      .transcript-panel.expanded{max-height:70vh;min-height:60vh}
-      .transcript-header{flex-wrap:nowrap;padding:10px 12px;gap:6px}
-      .transcript-header-left h3{font-size:13px}
-      .transcript-header-left h3 span{display:none}
-      .btn-auto-tts{padding:5px 10px;font-size:11px}
-      .transcript-content{min-height:0}
-      
-      /* Mobile Split View - Transcription & Translation side by side */
-      .transcript-split.active{display:flex;flex-direction:row}
-      .transcript-column{flex:1;min-width:0}
-      .transcript-column:first-child{border-right:1px solid var(--border)}
-      .transcript-column-header{padding:8px 10px;font-size:10px}
-      .transcript-column-content{padding:8px}
-      .transcript-line{margin-bottom:10px;padding-bottom:10px}
-      .transcript-line-text{font-size:12px}
-      .transcript-line-avatar{width:16px;height:16px;font-size:8px}
-      .transcript-line-name{font-size:10px}
-      .transcript-line-time{font-size:9px}
-      
-      /* Mobile Unified View */
-      .transcript-unified{padding:10px}
-      .transcript-entry{padding:10px;margin-bottom:12px}
-      .transcript-entry-header{gap:8px;margin-bottom:8px}
-      .transcript-entry-avatar{width:24px;height:24px;font-size:10px}
-      .transcript-entry-name{font-size:12px}
-      .transcript-entry-time{font-size:10px}
-      .transcript-entry-original,.transcript-entry-translation{font-size:12px;padding:8px 10px}
-      .transcript-entry-actions{margin-top:8px}
-      .btn-play-entry{padding:5px 10px;font-size:10px}
-      
-      /* Students Panel Mobile */
-      .students-panel{position:fixed;width:100%;height:70vh;bottom:0;left:0;right:0;top:auto;transform:translateY(100%);border-left:none;border-top:1px solid var(--border);border-radius:20px 20px 0 0}
-      .students-panel.open{transform:translateY(0)}
-      
-      /* Control Bar Mobile - ENLARGED */
-      .control-bar{padding:16px 12px;gap:6px}
-      .control-btn{min-width:62px;padding:10px 12px}
-      .control-btn i{font-size:20px}
-      .control-btn span{font-size:10px}
-      
-      /* Header Mobile */
-      .top-header{padding:8px 12px}
-      .header-btn{width:36px;height:36px;font-size:14px}
-      .header-btn-badge{min-width:16px;height:16px;font-size:9px}
-      
-      /* Shared Content Mobile */
-      .shared-content{position:relative;inset:0;margin:8px;border-radius:10px;max-height:35vh}
-    }
+        .local-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
-    /* TABLET LANDSCAPE */
-    @media(min-width:768px) and (max-width:1024px) and (orientation:landscape){
-      .video-grid.auto-layout{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
-      .transcript-panel{width:320px}
-      .transcript-panel.expanded{width:45vw}
-    }
+        .remote-info {
+            position: absolute;
+            bottom: 20px;
+            left: 16px;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 10px 16px;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 20;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
 
-    /* SMALL PHONES */
-    @media(max-width:480px){
-      .prejoin-container{border-radius:24px;padding:24px;gap:24px}
-      .prejoin-form h2{font-size:22px}
-      .prejoin-video-wrapper{aspect-ratio:4/3}
-      .prejoin-toggle{width:42px;height:42px;font-size:16px}
-      .device-select-group select{padding:12px 14px;font-size:14px}
-      .device-select-group label{font-size:11px}
-      .prejoin-room-input input{padding:12px 14px;font-size:14px;letter-spacing:1px}
-      .prejoin-room-prefix{padding:12px 14px;font-size:11px}
-      .prejoin-form .btn-primary{padding:16px;font-size:15px}
-      
-      .video-grid{padding:4px;gap:4px}
-      .video-tile{border-radius:8px}
-      .video-tile-bottom{padding:6px 8px}
-      .video-tile-name{font-size:10px}
-      .video-placeholder{width:40px;height:40px;font-size:16px}
-      
-      .control-btn{min-width:58px;padding:10px 10px}
-      .control-btn i{font-size:18px}
-      
-      .settings-modal{border-radius:16px}
-      .settings-header{padding:16px 20px}
-      .settings-header h2{font-size:18px}
-      .settings-content{padding:16px}
-      .settings-tab{padding:12px 14px;font-size:13px}
-    }
-  </style>
+        .remote-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--messenger-blue), #00c6ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 8px rgba(0, 132, 255, 0.3);
+        }
+
+        .remote-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        /* Transcription container */
+        .transcription-container {
+            position: absolute;
+            bottom: 180px;
+            left: 0;
+            right: 0;
+            padding: 0 16px;
+            z-index: 30;
+            max-height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .transcription-bubble {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.85), rgba(36, 37, 38, 0.9));
+            backdrop-filter: blur(20px);
+            padding: 14px 18px;
+            border-radius: 20px;
+            max-width: 90%;
+            animation: slideInUp 0.3s ease-out;
+            border-left: 4px solid var(--transcribe-teal);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .transcription-bubble::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        }
+
+        .transcription-speaker {
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 6px;
+            color: var(--messenger-light-gray);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .transcription-text {
+            font-size: 15px;
+            line-height: 1.5;
+            margin-bottom: 4px;
+        }
+
+        .translation-text {
+            font-size: 13px;
+            color: var(--messenger-light-gray);
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-style: italic;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            line-height: 1.4;
+        }
+
+        .translation-text i {
+            color: var(--translate-purple);
+            margin-top: 2px;
+        }
+
+        /* Speech visualization */
+        .speech-visualizer {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            margin-top: 8px;
+            height: 20px;
+        }
+
+        .speech-bar {
+            width: 3px;
+            background: linear-gradient(to top, var(--messenger-blue), #00c6ff);
+            border-radius: 2px;
+            animation: pulseBar 1s infinite ease-in-out;
+        }
+
+        .speech-bar:nth-child(2) { animation-delay: 0.1s; }
+        .speech-bar:nth-child(3) { animation-delay: 0.2s; }
+        .speech-bar:nth-child(4) { animation-delay: 0.3s; }
+        .speech-bar:nth-child(5) { animation-delay: 0.4s; }
+
+        /* Call controls */
+        .call-controls {
+            padding: 20px 16px;
+            background: linear-gradient(to top, var(--messenger-card), rgba(36, 37, 38, 0.95));
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid var(--messenger-gray);
+            z-index: 50;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .control-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .control-btn.mute {
+            background: linear-gradient(135deg, var(--messenger-gray), #4a4b4d);
+            color: white;
+        }
+
+        .control-btn.video {
+            background: linear-gradient(135deg, var(--messenger-gray), #4a4b4d);
+            color: white;
+        }
+
+        .control-btn.end-call {
+            background: linear-gradient(135deg, var(--danger-red), #ff6b81);
+            color: white;
+        }
+
+        .control-btn.speaker {
+            background: linear-gradient(135deg, var(--messenger-gray), #4a4b4d);
+            color: white;
+        }
+
+        .control-btn.chat {
+            background: linear-gradient(135deg, var(--messenger-gray), #4a4b4d);
+            color: white;
+        }
+
+        .control-btn.transcribe {
+            background: linear-gradient(135deg, var(--messenger-gray), #4a4b4d);
+            color: white;
+        }
+
+        .control-btn.active {
+            background: linear-gradient(135deg, var(--messenger-blue), var(--messenger-blue-hover));
+            color: white;
+        }
+
+        .control-btn.ai-active {
+            background: linear-gradient(135deg, var(--transcribe-teal), #16a085);
+            color: white;
+        }
+
+        /* Recording indicator */
+        .recording-indicator {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 16px;
+            height: 16px;
+            background-color: var(--recording-red);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 0 0 rgba(255, 71, 87, 0.4);
+        }
+
+        /* Chat panel */
+        .chat-panel {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 100%;
+            height: 75%;
+            background: var(--messenger-card);
+            border-radius: 24px 24px 0 0;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .chat-panel.open {
+            transform: translateY(0);
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--messenger-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--messenger-card);
+        }
+
+        .chat-title {
+            font-weight: 600;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-stats {
+            font-size: 13px;
+            color: var(--messenger-light-gray);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .ai-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 52px;
+            height: 26px;
+        }
+
+        .toggle-checkbox {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--messenger-gray);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .toggle-checkbox:checked + .toggle-slider {
+            background: linear-gradient(135deg, var(--translate-purple), #8e44ad);
+        }
+
+        .toggle-checkbox:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .toggle-label {
+            font-size: 13px;
+            color: var(--messenger-light-gray);
+            font-weight: 500;
+        }
+
+        .close-chat {
+            background: none;
+            border: none;
+            color: var(--messenger-light-gray);
+            font-size: 22px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+
+        .close-chat:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: linear-gradient(180deg, var(--messenger-card) 0%, var(--messenger-bg) 100%);
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 16px 20px;
+            border-radius: 22px;
+            font-size: 15px;
+            line-height: 1.5;
+            position: relative;
+            animation: messageAppear 0.3s ease-out;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.received {
+            align-self: flex-start;
+            background: linear-gradient(135deg, var(--messenger-gray), #4a4b4d);
+            border-bottom-left-radius: 8px;
+        }
+
+        .message.sent {
+            align-self: flex-end;
+            background: linear-gradient(135deg, var(--messenger-blue), var(--messenger-blue-hover));
+            border-bottom-right-radius: 8px;
+        }
+
+        .message-text {
+            font-size: 15px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .message-translation {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            font-style: italic;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            line-height: 1.4;
+        }
+
+        .message-translation i {
+            font-size: 11px;
+            margin-top: 3px;
+            color: var(--translate-purple);
+        }
+
+        .message-actions {
+            position: absolute;
+            top: -12px;
+            right: 10px;
+            background: var(--messenger-card);
+            border-radius: 16px;
+            padding: 6px;
+            display: flex;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transform: translateY(5px);
+        }
+
+        .message:hover .message-actions {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .message-action {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--messenger-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            color: white;
+            transition: all 0.2s;
+        }
+
+        .message-action:hover {
+            background: var(--messenger-blue);
+            transform: scale(1.1);
+        }
+
+        .chat-input-container {
+            padding: 16px 20px;
+            border-top: 1px solid var(--messenger-gray);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: var(--messenger-card);
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 14px 20px;
+            border-radius: 25px;
+            border: none;
+            background: var(--messenger-gray);
+            color: white;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .chat-input:focus {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 2px rgba(0, 132, 255, 0.3);
+        }
+
+        .mic-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--messenger-blue), var(--messenger-blue-hover));
+            color: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 132, 255, 0.3);
+        }
+
+        .mic-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(0, 132, 255, 0.4);
+        }
+
+        .mic-btn:active {
+            transform: scale(0.95);
+        }
+
+        .send-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--messenger-blue), var(--messenger-blue-hover));
+            color: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 132, 255, 0.3);
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(0, 132, 255, 0.4);
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* AI Processing Panel */
+        .ai-processing-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: var(--messenger-card);
+            border-radius: 24px 24px 0 0;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+            z-index: 90;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .ai-processing-panel.open {
+            transform: translateY(0);
+        }
+
+        .ai-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--messenger-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ai-title {
+            font-weight: 600;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ai-title i {
+            color: var(--transcribe-teal);
+        }
+
+        .close-ai {
+            background: none;
+            border: none;
+            color: var(--messenger-light-gray);
+            font-size: 22px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+
+        .close-ai:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .ai-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* Language Selector */
+        .language-selector {
+            margin-bottom: 24px;
+        }
+
+        .language-selector label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--messenger-light-gray);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .language-selector label i {
+            color: var(--translate-purple);
+        }
+
+        .language-select {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            background: var(--messenger-gray);
+            color: white;
+            border: 2px solid transparent;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .language-select:focus {
+            border-color: var(--messenger-blue);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* AI Service Status */
+        .ai-status {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .ai-service {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border-left: 4px solid var(--transcribe-teal);
+        }
+
+        .ai-service-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .ai-service-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--transcribe-teal), #16a085);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .ai-service-details h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .ai-service-details p {
+            font-size: 13px;
+            color: var(--messenger-light-gray);
+        }
+
+        .ai-service-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(46, 204, 113, 0.2);
+            color: var(--success-green);
+        }
+
+        /* TTS Player */
+        .tts-player {
+            position: absolute;
+            bottom: 130px;
+            right: 16px;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.85), rgba(36, 37, 38, 0.9));
+            backdrop-filter: blur(20px);
+            padding: 14px 18px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 40;
+            max-width: 220px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        .tts-text {
+            font-size: 13px;
+            color: var(--messenger-light-gray);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .tts-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tts-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--translate-purple), #8e44ad);
+            color: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tts-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* Connection status */
+        .connection-status {
+            position: absolute;
+            top: 80px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            z-index: 30;
+        }
+
+        .connection-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(36, 37, 38, 0.8));
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--messenger-light-gray);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .connection-badge i {
+            margin-right: 6px;
+            color: var(--success-green);
+        }
+
+        /* Call timer */
+        .call-timer {
+            font-size: 15px;
+            color: white;
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes pulseBar {
+            0%, 100% { height: 4px; }
+            50% { height: 16px; }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes messageAppear {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes recordingPulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            .call-container {
+                max-width: 800px;
+                border-radius: 20px;
+                margin: 20px auto;
+                height: calc(100vh - 40px);
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            }
+
+            .local-video-container {
+                width: 120px;
+                height: 180px;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--messenger-gray);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--messenger-light-gray);
+        }
+
+        /* Loading animation */
+        .loading-dots {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .loading-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--messenger-light-gray);
+            animation: loadingDot 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes loadingDot {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+    </style>
 </head>
 <body>
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="loading-card">
-      <div class="loading-icon"><i class="fas fa-circle-notch fa-spin"></i></div>
-      <div class="loading-title" id="loadingTitle">Checking authentication</div>
-      <div class="loading-text" id="loadingMessage">Please wait while we verify your session.</div>
-      <div class="loading-actions is-hidden" id="loadingActions">
-        <a class="loading-btn" href="../auth.html">Go to Sign In</a>
-        <a class="loading-btn secondary" href="../index.html">Retry</a>
-      </div>
+    <div class="call-container">
+        <!-- Status bar -->
+        <div class="status-bar">
+            <div class="time" id="currentTime">9:41</div>
+            <div class="status-icons">
+                <i class="fas fa-signal"></i>
+                <i class="fas fa-wifi"></i>
+                <i class="fas fa-battery-three-quarters"></i>
+            </div>
+        </div>
+
+        <!-- Call header -->
+        <div class="call-header">
+            <div class="call-title">
+                Messenger Video Call <span class="ai-badge">AI LIVE</span>
+            </div>
+            <div class="call-status">
+                <i class="fas fa-check-circle" style="color: var(--success-green);"></i>
+                Connected <span class="call-timer" id="callTimer">00:47</span>
+            </div>
+        </div>
+
+        <!-- Video containers -->
+        <div class="video-container">
+            <!-- Remote video -->
+            <div class="remote-video-container">
+                <video class="remote-video" id="remoteVideo" autoplay playsinline></video>
+                <div class="remote-info">
+                    <div class="remote-avatar">S</div>
+                    <div class="remote-name">Sarah Johnson</div>
+                </div>
+            </div>
+
+            <!-- Local video -->
+            <div class="local-video-container">
+                <video class="local-video" id="localVideo" autoplay playsinline muted></video>
+            </div>
+
+            <!-- Transcription bubbles -->
+            <div class="transcription-container" id="transcriptionContainer">
+                <!-- Dynamic transcription bubbles -->
+            </div>
+
+            <!-- TTS Player -->
+            <div class="tts-player" id="ttsPlayer" style="display: none;">
+                <div class="tts-text" id="ttsText">Playing translation...</div>
+                <div class="tts-controls">
+                    <button class="tts-btn" id="ttsPlayBtn">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="tts-btn" id="ttsStopBtn">
+                        <i class="fas fa-stop"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Connection status -->
+            <div class="connection-status">
+                <div class="connection-badge">
+                    <i class="fas fa-wifi"></i> Excellent connection • 45ms
+                </div>
+            </div>
+        </div>
+
+        <!-- Call controls -->
+        <div class="call-controls">
+            <button class="control-btn mute active" id="muteBtn" title="Mute">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <button class="control-btn video active" id="videoBtn" title="Video Off">
+                <i class="fas fa-video"></i>
+            </button>
+            <button class="control-btn end-call" id="endCallBtn" title="End Call">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+            <button class="control-btn transcribe ai-active" id="transcribeBtn" title="AI Transcription">
+                <i class="fas fa-comment-dots"></i>
+                <div class="recording-indicator" id="recordingIndicator"></div>
+            </button>
+            <button class="control-btn chat" id="chatBtn" title="Chat">
+                <i class="fas fa-comment-alt"></i>
+            </button>
+        </div>
+
+        <!-- Chat panel -->
+        <div class="chat-panel" id="chatPanel">
+            <div class="chat-header">
+                <div class="chat-title">
+                    <i class="fas fa-comments"></i> Live Chat
+                    <span class="chat-stats" id="chatStats">3 messages • AI ON</span>
+                </div>
+                <div class="ai-toggle">
+                    <span class="toggle-label">Auto-Translate</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" class="toggle-checkbox" id="translateToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <button class="close-chat" id="closeChatBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <!-- Chat messages -->
+            </div>
+            <div class="chat-input-container">
+                <input type="text" class="chat-input" id="chatInput" placeholder="Type a message or speak...">
+                <button class="mic-btn" id="micBtn" title="Voice Input">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button class="send-btn" id="sendBtn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- AI Processing Panel -->
+        <div class="ai-processing-panel" id="aiProcessingPanel">
+            <div class="ai-header">
+                <div class="ai-title">
+                    <i class="fas fa-robot"></i> AI Processing Settings
+                </div>
+                <button class="close-ai" id="closeAiBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="ai-content">
+                <div class="language-selector">
+                    <label for="sourceLanguage">
+                        <i class="fas fa-microphone"></i> Speech Recognition Language
+                    </label>
+                    <select class="language-select" id="sourceLanguage">
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="zh">Chinese (Mandarin)</option>
+                        <option value="ja">Japanese</option>
+                        <option value="ko">Korean</option>
+                        <option value="ar">Arabic</option>
+                        <option value="ru">Russian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="it">Italian</option>
+                    </select>
+                </div>
+
+                <div class="language-selector">
+                    <label for="targetLanguage">
+                        <i class="fas fa-language"></i> Translation Language
+                    </label>
+                    <select class="language-select" id="targetLanguage">
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="zh">Chinese (Mandarin)</option>
+                        <option value="ja">Japanese</option>
+                        <option value="ko">Korean</option>
+                        <option value="ar">Arabic</option>
+                        <option value="ru">Russian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="it">Italian</option>
+                    </select>
+                </div>
+
+                <div class="ai-status">
+                    <div class="ai-service">
+                        <div class="ai-service-info">
+                            <div class="ai-service-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div class="ai-service-details">
+                                <h4>OpenAI Whisper API</h4>
+                                <p>Speech-to-Text Processing</p>
+                            </div>
+                        </div>
+                        <div class="ai-service-status" id="whisperStatus">Connected</div>
+                    </div>
+
+                    <div class="ai-service">
+                        <div class="ai-service-info">
+                            <div class="ai-service-icon" style="background: linear-gradient(135deg, var(--ai-orange), #d35400);">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <div class="ai-service-details">
+                                <h4>GPT-4 Translation</h4>
+                                <p>Real-time Language Translation</p>
+                            </div>
+                        </div>
+                        <div class="ai-service-status" id="gptStatus">Connected</div>
+                    </div>
+
+                    <div class="ai-service">
+                        <div class="ai-service-info">
+                            <div class="ai-service-icon" style="background: linear-gradient(135deg, var(--translate-purple), #8e44ad);">
+                                <i class="fas fa-wave-square"></i>
+                            </div>
+                            <div class="ai-service-details">
+                                <h4>ElevenLabs TTS</h4>
+                                <p>Text-to-Speech Synthesis</p>
+                            </div>
+                        </div>
+                        <div class="ai-service-status" id="ttsStatus">Connected</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- PRE-JOIN -->
-  <div class="prejoin-overlay" id="prejoinOverlay">
-    <div class="prejoin-container">
-      <div class="prejoin-preview">
-        <div class="prejoin-video-wrapper">
-          <video id="prejoinVideo" autoplay muted playsinline></video>
-          <div class="prejoin-video-off" id="prejoinVideoOff"><i class="fas fa-video-slash"></i><span>Camera is off</span></div>
-        </div>
-        <div class="prejoin-controls">
-          <button class="prejoin-toggle" id="prejoinMicToggle" title="Mic"><i class="fas fa-microphone"></i></button>
-          <button class="prejoin-toggle" id="prejoinCamToggle" title="Camera"><i class="fas fa-video"></i></button>
-        </div>
-      </div>
-      <div class="prejoin-form">
-        <h2>Join Classroom</h2>
-        <p>Configure your settings before joining</p>
-        <div class="prejoin-user" id="prejoinUser">
-          <div class="prejoin-user-avatar" id="prejoinAvatar">?</div>
-          <div class="prejoin-user-info"><h4 id="prejoinName">User</h4><p id="prejoinEmail">user@example.com</p></div>
-        </div>
-        <div class="device-select-group"><label><i class="fas fa-user"></i> Display Name</label><input type="text" id="displayNameInput" placeholder="Enter your name" maxlength="50"/></div>
-        <div class="prejoin-room-input">
-          <span class="prejoin-room-prefix">CLASS-</span>
-          <input type="text" id="roomIdInput" placeholder="ORBIT (default)" maxlength="6" value="ORBIT"/>
-        </div>
-        <div style="margin: 12px 0; text-align: center; font-size: 12px; color: var(--text-muted);">
-          Using your configured Stream video room with all features enabled
-        </div>
-        <div class="device-select-group"><label><i class="fas fa-language"></i> Language</label><select id="userLanguageSelect"></select></div>
-        <div class="device-select-group"><label><i class="fas fa-microphone"></i> Microphone</label><select id="micSelect"></select></div>
-        <div class="device-select-group"><label><i class="fas fa-video"></i> Camera</label><select id="camSelect"></select></div>
-        <div class="device-select-group"><label><i class="fas fa-volume-up"></i> Speaker</label><select id="speakerSelect"></select></div>
-        <button class="btn-primary" id="btnJoinRoom"><i class="fas fa-sign-in-alt"></i> Join Class</button>
-        <button class="btn-logout" id="btnLogout"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
-      </div>
-    </div>
-  </div>
+    <!-- Audio elements -->
+    <audio id="ttsAudio" hidden></audio>
+    <audio id="notificationAudio" hidden>
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3" type="audio/mpeg">
+    </audio>
 
-  <!-- MAIN APP -->
-  <div class="app-container" id="appContainer">
-    <div class="top-header">
-      <div class="header-left">
-        <div class="header-logo"><div class="logo-icon"><i class="fas fa-graduation-cap"></i></div><span>Success Class</span></div>
-        <div class="room-badge"><span class="room-badge-id" id="displayRoomId">XXXXXX</span><span class="room-badge-sep">|</span><i class="fas fa-circle"></i><span id="participantCount">1</span></div>
-      </div>
-      <div class="header-center"><div class="meeting-timer" id="meetingTimer"><i class="fas fa-circle"></i><span id="timerDisplay">00:00</span></div></div>
-      <div class="header-right">
-        <button class="header-btn" id="btnTranscript" title="Transcripts"><i class="fas fa-closed-captioning"></i></button>
-        <button class="header-btn danger" id="btnLeaveHeader" title="Leave"><i class="fas fa-sign-out-alt"></i></button>
-        <div class="header-menu-container">
-          <button class="header-btn" id="btnHeaderMenu" title="Menu"><i class="fas fa-ellipsis-v"></i></button>
-          <div class="header-menu" id="headerMenu">
-            <button class="header-menu-item" id="btnChatMenu"><i class="fas fa-comments"></i><span>Group Chat</span><span class="menu-badge" id="chatBadgeMenu" style="display:none">0</span></button>
-            <button class="header-menu-item" id="btnAutoTTSMenu"><i class="fas fa-volume-up"></i><span>Auto-play Audio</span></button>
-            <button class="header-menu-item" id="btnStudentsMenu"><i class="fas fa-users"></i><span>Participants</span><span class="menu-badge" id="studentsBadgeMenu">1</span></button>
-            <button class="header-menu-item" id="btnPiPMenu"><i class="fas fa-external-link-square-alt"></i><span>Picture-in-Picture</span></button>
-            <div class="header-menu-divider"></div>
-            <button class="header-menu-item" id="btnSettingsMenu"><i class="fas fa-cog"></i><span>Settings</span></button>
-            <button class="header-menu-item" id="btnShareRoom"><i class="fas fa-share-alt"></i><span>Share Room</span></button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="main-content">
-      <div class="video-area">
-        <div class="video-grid" id="videoGrid" data-count="1"></div>
-        <div class="shared-content" id="sharedContent">
-          <div class="shared-content-header"><h4><i class="fas fa-desktop"></i> <span id="sharedContentTitle">Screen Share</span></h4><button class="panel-close" id="btnStopSharing"><i class="fas fa-times"></i></button></div>
-          <div class="shared-content-body" id="sharedContentBody">
-            <video id="screenShareVideo" autoplay playsinline></video>
-            <canvas id="whiteboardCanvas" width="1280" height="720"></canvas>
-          </div>
-          <div class="whiteboard-tools is-hidden" id="whiteboardTools">
-            <button class="whiteboard-tool active" data-tool="pen"><i class="fas fa-pen"></i></button>
-            <button class="whiteboard-tool" data-tool="eraser"><i class="fas fa-eraser"></i></button>
-            <button class="whiteboard-tool"><input type="color" id="whiteboardColor" value="#000000"/></button>
-            <button class="whiteboard-tool" id="btnClearBoard"><i class="fas fa-trash"></i></button>
-          </div>
-        </div>
-      </div>
-      <div class="students-panel" id="studentsPanel">
-        <div class="panel-header"><h3><i class="fas fa-users"></i> Participants</h3><button class="panel-close" id="btnCloseStudents"><i class="fas fa-times"></i></button></div>
-        <div class="students-list" id="studentsList"></div>
-      </div>
-      <div class="chat-panel" id="chatPanel">
-        <div class="panel-header"><h3><i class="fas fa-comments"></i> Group Chat</h3><button class="panel-close" id="btnCloseChat"><i class="fas fa-times"></i></button></div>
-        <div class="chat-messages" id="chatMessages">
-          <div class="chat-empty" id="chatEmpty"><i class="fas fa-comments"></i><p>No messages yet.<br>Start the conversation!</p></div>
-        </div>
-        <div class="chat-input-container">
-          <input type="text" class="chat-input" id="chatInput" placeholder="Type a message..." maxlength="500">
-          <button class="chat-send" id="btnSendChat"><i class="fas fa-paper-plane"></i></button>
-        </div>
-      </div>
-      <div class="transcript-panel" id="transcriptPanel">
-        <div class="transcript-header">
-          <div class="transcript-header-left">
-            <h3><i class="fas fa-language"></i> Transcripts</h3>
-            <button class="btn-auto-tts" id="btnAutoTTS"><i class="fas fa-volume-up"></i><span>Auto</span><span class="queue-count" id="ttsQueueBadge">0</span></button>
-          </div>
-          <div class="transcript-header-right">
-            <div class="transcript-view-toggle"><button class="active" data-view="unified">Unified</button><button data-view="split">Split</button></div>
-            <button class="transcript-expand" id="btnExpandTranscript" title="Expand"><i class="fas fa-expand-alt"></i></button>
-            <button class="panel-close" id="btnCloseTranscript"><i class="fas fa-times"></i></button>
-          </div>
-        </div>
-        <div class="transcript-content">
-          <div class="transcript-unified" id="transcriptUnified"><div class="transcript-empty" id="transcriptEmpty"><i class="fas fa-language"></i><p>Transcripts appear here as participants speak</p></div></div>
-          <div class="transcript-split" id="transcriptSplit">
-            <div class="transcript-column"><div class="transcript-column-header">Original</div><div class="transcript-column-content" id="originalColumn"></div></div>
-            <div class="transcript-column"><div class="transcript-column-header">Translation</div><div class="transcript-column-content" id="translationColumn"></div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- STICKY CONTROL BAR -->
-    <div class="control-bar">
-      <div class="control-bar-left"><div class="meeting-timer is-hidden" id="mobileTimer"><i class="fas fa-circle"></i><span id="mobileTimerDisplay">00:00</span></div></div>
-      <button class="control-btn" id="btnMic"><i class="fas fa-microphone"></i><span>Mic</span></button>
-      <button class="control-btn" id="btnCamera"><i class="fas fa-video"></i><span>Camera</span></button>
-      <button class="control-btn" id="btnScreenShare"><i class="fas fa-desktop"></i><span>Share</span></button>
-      <button class="control-btn" id="btnWhiteboard"><i class="fas fa-chalkboard"></i><span>Board</span></button>
-      <button class="control-btn" id="btnTools" onclick="window.open('tools.html','_blank')"><i class="fas fa-tools"></i><span>Tools</span></button>
-      <div class="control-divider"></div>
-      <button class="control-btn" id="btnRaiseHand"><i class="fas fa-hand-paper"></i><span>Hand</span></button>
-      <button class="control-btn" id="btnChat"><i class="fas fa-comments"></i><span>Chat</span></button>
-      <button class="control-btn active" id="btnTranscribe"><i class="fas fa-closed-captioning"></i><span>Caption</span></button>
-      <button class="control-btn" id="btnQuiz" title="Generate Quiz"><i class="fas fa-question-circle"></i><span>Quiz</span></button>
-      <button class="control-btn" id="btnRecord"><i class="fas fa-circle"></i><span>Record</span></button>
-      <div class="control-divider"></div>
-      <button class="control-btn danger" id="btnLeave"><i class="fas fa-phone-slash"></i><span>Leave</span></button>
-    </div>
-  </div>
+    <!-- Simulated API Responses (in a real app, these would be actual API calls) -->
+    <script>
+        // Complete AI Video Calling SDK
+        class MessengerVideoCallSDK {
+            constructor() {
+                this.state = {
+                    isMuted: false,
+                    isVideoOff: false,
+                    isTranscribing: true,
+                    isChatOpen: false,
+                    isAiPanelOpen: false,
+                    isRecording: false,
+                    isTTSPlaying: false,
+                    callTime: 47,
+                    chatMessages: [],
+                    transcriptions: [],
+                    currentTTS: null,
+                    sourceLang: 'en',
+                    targetLang: 'es',
+                    aiServices: {
+                        whisper: true,
+                        gpt: true,
+                        elevenlabs: true
+                    }
+                };
 
-  <!-- SETTINGS -->
-  <div class="settings-overlay" id="settingsOverlay">
-    <div class="settings-modal">
-      <div class="settings-header"><h2><i class="fas fa-cog"></i> Settings</h2><button class="settings-close" id="btnCloseSettings"><i class="fas fa-times"></i></button></div>
-      <div class="settings-tabs">
-        <button class="settings-tab active" data-tab="devices">Devices</button>
-        <button class="settings-tab" data-tab="language">Language</button>
-        <button class="settings-tab" data-tab="audio">Audio</button>
-      </div>
-      <div class="settings-content">
-        <div class="settings-section active" data-section="devices">
-          <h4><i class="fas fa-video"></i> Video & Audio Devices</h4>
-          <div class="setting-row"><label>Camera</label><select id="settingsCamSelect"></select></div>
-          <div class="setting-row"><label>Microphone</label><select id="settingsMicSelect"></select></div>
-          <div class="setting-row"><label>Speaker</label><select id="settingsSpeakerSelect"></select></div>
-        </div>
-        <div class="settings-section" data-section="language">
-          <h4><i class="fas fa-language"></i> Translation Settings</h4>
-          <div class="setting-row"><label>Translation Language</label><select id="settingsLanguageSelect"></select></div>
-          <div class="setting-row-inline"><label>Auto-play translations</label><div class="toggle-switch" id="toggleAutoTTS"></div></div>
-        </div>
-        <div class="settings-section" data-section="audio">
-          <h4><i class="fas fa-volume-up"></i> Audio Settings</h4>
-          <div class="setting-row-inline"><label>Echo cancellation</label><div class="toggle-switch active" id="toggleEcho"></div></div>
-          <div class="setting-row-inline"><label>Noise suppression</label><div class="toggle-switch active" id="toggleNoise"></div></div>
-          <div class="setting-row-inline"><label>Auto gain control</label><div class="toggle-switch active" id="toggleGain"></div></div>
-        </div>
-      </div>
-      <div class="settings-footer"><button class="btn-settings-save" id="btnSaveSettings">Save Changes</button></div>
-    </div>
-  </div>
+                this.init();
+            }
 
-  <div class="toast" id="toast"></div>
+            init() {
+                this.setupDOM();
+                this.setupEventListeners();
+                this.setupTimers();
+                this.simulateVideoStreams();
+                this.simulateAIResponse();
+                this.setupMockAPIs();
+                this.showNotification('AI Video Call SDK Initialized', 'success');
+            }
 
-<script>
-// Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyDVw2Xt1gf52xXgx4E5TMKf2007AyQwBfQ",
-  authDomain: "impactful-ring-469323-e5.firebaseapp.com",
-  databaseURL: "https://impactful-ring-469323-e5.europe-west1.firebasedatabase.app",
-  projectId: "impactful-ring-469323-e5",
-  storageBucket: "impactful-ring-469323-e5.firebasestorage.app",
-  messagingSenderId: "316842561818",
-  appId: "1:316842561818:web:8e580f90d4c766832c5ca3"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth(), db = firebase.database();
-const $ = id => document.getElementById(id);
-const ROOT_PATH = location.pathname.includes('/my-app/') ? '..' : '.';
-const AUTH_URL = `${ROOT_PATH}/auth.html`;
-const INDEX_URL = `${ROOT_PATH}/index.html`;
-const loadingOverlay = $('loadingOverlay');
-const loadingTitle = $('loadingTitle');
-const loadingMessage = $('loadingMessage');
-const loadingActions = $('loadingActions');
+            setupDOM() {
+                this.elements = {
+                    // Core elements
+                    muteBtn: document.getElementById('muteBtn'),
+                    videoBtn: document.getElementById('videoBtn'),
+                    endCallBtn: document.getElementById('endCallBtn'),
+                    transcribeBtn: document.getElementById('transcribeBtn'),
+                    chatBtn: document.getElementById('chatBtn'),
+                    recordingIndicator: document.getElementById('recordingIndicator'),
+                    
+                    // Chat elements
+                    chatPanel: document.getElementById('chatPanel'),
+                    closeChatBtn: document.getElementById('closeChatBtn'),
+                    chatInput: document.getElementById('chatInput'),
+                    sendBtn: document.getElementById('sendBtn'),
+                    micBtn: document.getElementById('micBtn'),
+                    chatMessages: document.getElementById('chatMessages'),
+                    chatStats: document.getElementById('chatStats'),
+                    translateToggle: document.getElementById('translateToggle'),
+                    
+                    // AI elements
+                    aiProcessingPanel: document.getElementById('aiProcessingPanel'),
+                    closeAiBtn: document.getElementById('closeAiBtn'),
+                    sourceLanguage: document.getElementById('sourceLanguage'),
+                    targetLanguage: document.getElementById('targetLanguage'),
+                    whisperStatus: document.getElementById('whisperStatus'),
+                    gptStatus: document.getElementById('gptStatus'),
+                    ttsStatus: document.getElementById('ttsStatus'),
+                    
+                    // Transcription elements
+                    transcriptionContainer: document.getElementById('transcriptionContainer'),
+                    
+                    // TTS elements
+                    ttsPlayer: document.getElementById('ttsPlayer'),
+                    ttsText: document.getElementById('ttsText'),
+                    ttsPlayBtn: document.getElementById('ttsPlayBtn'),
+                    ttsStopBtn: document.getElementById('ttsStopBtn'),
+                    ttsAudio: document.getElementById('ttsAudio'),
+                    
+                    // Timer elements
+                    callTimer: document.getElementById('callTimer'),
+                    currentTime: document.getElementById('currentTime'),
+                    
+                    // Video elements
+                    localVideo: document.getElementById('localVideo'),
+                    remoteVideo: document.getElementById('remoteVideo')
+                };
 
-function showLoading(title, message, showActions=false){
-  if(title) loadingTitle.textContent = title;
-  if(message) loadingMessage.textContent = message;
-  loadingActions.classList.toggle('is-hidden', !showActions);
-  loadingOverlay.classList.remove('hidden');
-}
+                // Initialize chat with sample messages
+                this.addChatMessage('Hey Sarah, can you see me clearly?', 'sent');
+                this.addChatMessage('Yes, your video is perfect! How about my audio?', 'received');
+                this.addChatMessage('Audio is crystal clear too. Ready to discuss the project?', 'sent');
+                this.updateChatStats();
+            }
 
-function hideLoading(){
-  loadingOverlay.classList.add('hidden');
-}
+            setupEventListeners() {
+                // Control buttons
+                this.elements.muteBtn.addEventListener('click', () => this.toggleMute());
+                this.elements.videoBtn.addEventListener('click', () => this.toggleVideo());
+                this.elements.endCallBtn.addEventListener('click', () => this.endCall());
+                this.elements.transcribeBtn.addEventListener('click', () => this.toggleTranscription());
+                this.elements.chatBtn.addEventListener('click', () => this.toggleChat());
+                this.elements.transcribeBtn.addEventListener('dblclick', () => this.openAiPanel());
 
-// Voice Mapping - Comprehensive language support with Cartesia voices
-const UNIVERSAL_VOICE = '5e94f5a6-6e44-4610-8530-5ff3f8d30ca8'; // English fallback
-const VOICES = {
-  // Major Languages with Direct Voice Support
-  'en':'a0e99841-438c-4a64-b679-ae501e7d6091','en-US':'a0e99841-438c-4a64-b679-ae501e7d6091','en-GB':'a0e99841-438c-4a64-b679-ae501e7d6091','en-AU':'a0e99841-438c-4a64-b679-ae501e7d6091','en-CA':'a0e99841-438c-4a64-b679-ae501e7d6091',
-  'es':'846d6cb0-2301-48b6-9571-6d4e2685d80c','es-ES':'846d6cb0-2301-48b6-9571-6d4e2685d80c','es-MX':'846d6cb0-2301-48b6-9571-6d4e2685d80c','es-AR':'846d6cb0-2301-48b6-9571-6d4e2685d80c','es-CO':'846d6cb0-2301-48b6-9571-6d4e2685d80c','es-CL':'846d6cb0-2301-48b6-9571-6d4e2685d80c',
-  'fr':'a8a1eb38-5f15-4c1d-8722-7ac0f329f8f3','fr-FR':'a8a1eb38-5f15-4c1d-8722-7ac0f329f8f3','fr-CA':'a8a1eb38-5f15-4c1d-8722-7ac0f329f8f3','fr-BE':'a8a1eb38-5f15-4c1d-8722-7ac0f329f8f3','fr-CH':'a8a1eb38-5f15-4c1d-8722-7ac0f329f8f3',
-  'de':'3f6e78a8-5283-42aa-b5e7-af82e8bb310c','de-DE':'3f6e78a8-5283-42aa-b5e7-af82e8bb310c','de-AT':'3f6e78a8-5283-42aa-b5e7-af82e8bb310c','de-CH':'3f6e78a8-5283-42aa-b5e7-af82e8bb310c',
-  'it':'03496517-369a-4db1-8236-3d3ae459ddf7','it-IT':'03496517-369a-4db1-8236-3d3ae459ddf7','it-CH':'03496517-369a-4db1-8236-3d3ae459ddf7',
-  'pt':'700d1ee3-a641-4018-ba6e-899dcadc9e2b','pt-PT':'700d1ee3-a641-4018-ba6e-899dcadc9e2b','pt-BR':'700d1ee3-a641-4018-ba6e-899dcadc9e2b',
-  'nl':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8','nl-NL':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8','nl-BE':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8','vls':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8',
-  'zh':'eda5bbff-1ff1-4886-8ef1-4e69a77640a0','zh-CN':'eda5bbff-1ff1-4886-8ef1-4e69a77640a0','zh-TW':'eda5bbff-1ff1-4886-8ef1-4e69a77640a0','zh-HK':'eda5bbff-1ff1-4886-8ef1-4e69a77640a0',
-  'byv':'a8a1eb38-5f15-4c1d-8722-7ac0f329f8f3',
-  'ja':'2b568345-1d48-4047-b25f-7baccf842eb0','ja-JP':'2b568345-1d48-4047-b25f-7baccf842eb0',
-  'ko':'029c3c7a-b6d9-44fb-a9b9-e91c9c7b3a6e','ko-KR':'029c3c7a-b6d9-44fb-a9b9-e91c9c7b3a6e',
-  'ar':'cfa77df6-e0a1-4c8a-a239-7e8deb0d1cb2','ar-SA':'cfa77df6-e0a1-4c8a-a239-7e8deb0d1cb2','ar-EG':'cfa77df6-e0a1-4c8a-a239-7e8deb0d1cb2','ar-AE':'cfa77df6-e0a1-4c8a-a239-7e8deb0d1cb2','ar-MA':'cfa77df6-e0a1-4c8a-a239-7e8deb0d1cb2',
-  'hi':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e','hi-IN':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e',
-  'ru':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7','ru-RU':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7',
-  'tr':'d46abd1d-2d02-43e8-819f-51fb652c1c61','tr-TR':'d46abd1d-2d02-43e8-819f-51fb652c1c61',
-  'pl':'f9836c6e-a0bd-460e-9d3c-f7a1a84d2d4e','pl-PL':'f9836c6e-a0bd-460e-9d3c-f7a1a84d2d4e',
-  'vi':'41534e16-2966-4c6b-9670-111411def906','vi-VN':'41534e16-2966-4c6b-9670-111411def906',
-  'th':'3b554273-4299-48b9-9aaf-eefd438e3941','th-TH':'3b554273-4299-48b9-9aaf-eefd438e3941',
-  'id':'bf991597-6c13-47e4-8411-91ec2de5c466','id-ID':'bf991597-6c13-47e4-8411-91ec2de5c466',
-  // Filipino/Tagalog (using Dutch voice as closest)
-  'tl':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8','fil':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8','tl-PH':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8',
-  // Additional Languages (using nearest language voice)
-  'sv':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8','sv-SE':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8',
-  'da':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8','da-DK':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8',
-  'no':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8','nb':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8','nn':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8',
-  'fi':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8','fi-FI':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8',
-  'cs':'f9836c6e-a0bd-460e-9d3c-f7a1a84d2d4e','cs-CZ':'f9836c6e-a0bd-460e-9d3c-f7a1a84d2d4e',
-  'sk':'f9836c6e-a0bd-460e-9d3c-f7a1a84d2d4e','sk-SK':'f9836c6e-a0bd-460e-9d3c-f7a1a84d2d4e',
-  'hu':'f9836c6e-a0bd-460e-9d3c-f7a1a84d2d4e','hu-HU':'f9836c6e-a0bd-460e-9d3c-f7a1a84d2d4e',
-  'ro':'03496517-369a-4db1-8236-3d3ae459ddf7','ro-RO':'03496517-369a-4db1-8236-3d3ae459ddf7',
-  'el':'03496517-369a-4db1-8236-3d3ae459ddf7','el-GR':'03496517-369a-4db1-8236-3d3ae459ddf7',
-  'bg':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7','bg-BG':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7',
-  'uk':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7','uk-UA':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7',
-  'he':'cfa77df6-e0a1-4c8a-a239-7e8deb0d1cb2','he-IL':'cfa77df6-e0a1-4c8a-a239-7e8deb0d1cb2',
-  'fa':'cfa77df6-e0a1-4c8a-a239-7e8deb0d1cb2','fa-IR':'cfa77df6-e0a1-4c8a-a239-7e8deb0d1cb2',
-  'ur':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e','ur-PK':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e',
-  'bn':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e','bn-BD':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e','bn-IN':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e',
-  'ta':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e','ta-IN':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e','ta-LK':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e',
-  'te':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e','te-IN':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e',
-  'mr':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e','mr-IN':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e',
-  'gu':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e','gu-IN':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e',
-  'kn':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e','kn-IN':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e',
-  'ml':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e','ml-IN':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e',
-  'si':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e','si-LK':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e',
-  'ms':'bf991597-6c13-47e4-8411-91ec2de5c466','ms-MY':'bf991597-6c13-47e4-8411-91ec2de5c466',
-  'my':'3b554273-4299-48b9-9aaf-eefd438e3941','my-MM':'3b554273-4299-48b9-9aaf-eefd438e3941',
-  'km':'3b554273-4299-48b9-9aaf-eefd438e3941','km-KH':'3b554273-4299-48b9-9aaf-eefd438e3941',
-  'lo':'3b554273-4299-48b9-9aaf-eefd438e3941','lo-LA':'3b554273-4299-48b9-9aaf-eefd438e3941',
-  'ka':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7','ka-GE':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7',
-  'hy':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7','hy-AM':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7',
-  'az':'d46abd1d-2d02-43e8-819f-51fb652c1c61','az-AZ':'d46abd1d-2d02-43e8-819f-51fb652c1c61',
-  'kk':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7','kk-KZ':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7',
-  'uz':'d46abd1d-2d02-43e8-819f-51fb652c1c61','uz-UZ':'d46abd1d-2d02-43e8-819f-51fb652c1c61',
-  'sw':'a0e99841-438c-4a64-b679-ae501e7d6091','sw-KE':'a0e99841-438c-4a64-b679-ae501e7d6091','sw-TZ':'a0e99841-438c-4a64-b679-ae501e7d6091',
-  'am':'cfa77df6-e0a1-4c8a-a239-7e8deb0d1cb2','am-ET':'cfa77df6-e0a1-4c8a-a239-7e8deb0d1cb2',
-  'zu':'a0e99841-438c-4a64-b679-ae501e7d6091','zu-ZA':'a0e99841-438c-4a64-b679-ae501e7d6091',
-  'af':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8','af-ZA':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8',
-  'sr':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7','sr-RS':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7',
-  'hr':'03496517-369a-4db1-8236-3d3ae459ddf7','hr-HR':'03496517-369a-4db1-8236-3d3ae459ddf7',
-  'bs':'03496517-369a-4db1-8236-3d3ae459ddf7','bs-BA':'03496517-369a-4db1-8236-3d3ae459ddf7',
-  'sl':'03496517-369a-4db1-8236-3d3ae459ddf7','sl-SI':'03496517-369a-4db1-8236-3d3ae459ddf7',
-  'mk':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7','mk-MK':'2d8c8d5f-6bb3-44a6-afd2-a5e05d2caca7',
-  'sq':'03496517-369a-4db1-8236-3d3ae459ddf7','sq-AL':'03496517-369a-4db1-8236-3d3ae459ddf7',
-  'et':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8','et-EE':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8',
-  'lv':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8','lv-LV':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8',
-  'lt':'f9836c6e-a0bd-460e-9d3c-f7a1a84d2d4e','lt-LT':'f9836c6e-a0bd-460e-9d3c-f7a1a84d2d4e',
-  'is':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8','is-IS':'5e94f5a6-6e44-4610-8530-5ff3f8d30ca8',
-  'mt':'03496517-369a-4db1-8236-3d3ae459ddf7','mt-MT':'03496517-369a-4db1-8236-3d3ae459ddf7',
-  'ca':'846d6cb0-2301-48b6-9571-6d4e2685d80c','ca-ES':'846d6cb0-2301-48b6-9571-6d4e2685d80c',
-  'gl':'846d6cb0-2301-48b6-9571-6d4e2685d80c','gl-ES':'846d6cb0-2301-48b6-9571-6d4e2685d80c',
-  'eu':'846d6cb0-2301-48b6-9571-6d4e2685d80c','eu-ES':'846d6cb0-2301-48b6-9571-6d4e2685d80c',
-  'cy':'a0e99841-438c-4a64-b679-ae501e7d6091','cy-GB':'a0e99841-438c-4a64-b679-ae501e7d6091',
-  'ga':'a0e99841-438c-4a64-b679-ae501e7d6091','ga-IE':'a0e99841-438c-4a64-b679-ae501e7d6091',
-  'ne':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e','ne-NP':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e',
-  'pa':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e','pa-IN':'4a19f17c-eedc-4cf6-b89b-3efb5c8c8a4e'
-};
-function getVoice(l){
-  // Direct match
-  if(VOICES[l])return VOICES[l];
-  // Try base language (e.g., 'en' from 'en-US')
-  const base=l.split('-')[0];
-  if(VOICES[base])return VOICES[base];
-  // Fallback to universal English voice
-  return UNIVERSAL_VOICE;
-}
+                // Chat panel
+                this.elements.closeChatBtn.addEventListener('click', () => this.closeChat());
+                this.elements.sendBtn.addEventListener('click', () => this.sendMessage());
+                this.elements.chatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendMessage();
+                });
+                this.elements.micBtn.addEventListener('click', () => this.startVoiceInput());
 
-// State
-let currentUser=null,userProfile=null,currentRoom=null,roomConfig=null,userLanguage='en',sourceLanguage='en',sourceLanguageExplicit=false,languagesList=[];
-let localStream=null,screenStream=null,selectedMicId=null,selectedCamId=null,selectedSpeakerId=null;
-let isTranscribing=false,sttRecorder=null,speechRecognition=null,sttProvider='openai',openaiKey=null,geminiKey=null,sentenceBuffer='',flushTimeout=null;
-let autoPlayTTS=false,ttsQueue=[],isPlayingTTS=false,currentAudio=null,processedIds=new Set();
-let participants=new Map(),pinnedUserId=null,meetingStartTime=null,meetingTimerInterval=null;
-let isWhiteboardActive=false,whiteboardTool='pen',whiteboardCtx=null,isDrawing=false;
-let prejoinStream=null,prejoinMicEnabled=true,prejoinCamEnabled=true;
-let mediaRecorder=null,recordedChunks=[],isRecording=false;
-let presenceRef=null,participantsRef=null; // Firebase presence refs
-// Stream Video SDK
-const DEFAULT_STREAM_API_KEY='pnh7nmt84ebm';
-const DEFAULT_STREAM_SECRET_KEY='ycewy9r3x5597e39j7ay7q5v7fw2vsybqb65gfu2n6nrzab7vw4q63bdkyh8f3f6';
-let STREAM_API_KEY=DEFAULT_STREAM_API_KEY;
-let STREAM_SECRET_KEY=DEFAULT_STREAM_SECRET_KEY;
-let streamClient=null,streamCall=null;
-// Cerebras AI Quiz System
-const DEFAULT_CEREBRAS_API_KEY='csk-pprwh4v2dkey9cjx94mj3xx4wmm32rhc6yjcvwx8nfh2h2mh';
-let CEREBRAS_API_KEY=DEFAULT_CEREBRAS_API_KEY;
-const DEFAULT_CARTESIA_KEY='sk_car_gXEk8CgTphxpLVvA1C9DZE';
-const DEFAULT_CARTESIA_MODEL_ID='sonic-3-latest';
-let cartesiaKey=DEFAULT_CARTESIA_KEY;
-let cartesiaModelId=DEFAULT_CARTESIA_MODEL_ID;
-const DEFAULT_DEEPGRAM_KEY='dd658e27599a6c7ec1cbe38e2040de6c4533a945';
-let deepgramKey=DEFAULT_DEEPGRAM_KEY;
-let quizLink=null,quizTranscripts=[];
-const FLUSH_DELAY=1200;
+                // AI Panel
+                this.elements.closeAiBtn.addEventListener('click', () => this.closeAiPanel());
+                this.elements.sourceLanguage.addEventListener('change', (e) => {
+                    this.state.sourceLang = e.target.value;
+                    this.showNotification(`Speech recognition set to ${this.getLanguageName(e.target.value)}`);
+                });
+                this.elements.targetLanguage.addEventListener('change', (e) => {
+                    this.state.targetLang = e.target.value;
+                    this.showNotification(`Translation set to ${this.getLanguageName(e.target.value)}`);
+                });
 
-function showToast(m,d=2500){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),d)}
-function generateId(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let id='';for(let i=0;i<6;i++)id+=c.charAt(Math.floor(Math.random()*c.length));return id}
-function formatTime(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;if(h>0)return`${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;return`${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`}
+                // TTS controls
+                this.elements.ttsPlayBtn.addEventListener('click', () => this.toggleTTS());
+                this.elements.ttsStopBtn.addEventListener('click', () => this.stopTTS());
 
-// Auth Check - Redirect if not authenticated
-auth.onAuthStateChanged(async u=>{
-  if(u){
-    currentUser=u;
-    await loadUserProfile(u);
-    await loadLanguages();
-    await loadAdminConfig();
-    hideLoading();
-    const joinData = sessionStorage.getItem('original_join_data');
-    if(joinData){
-      await applyJoinDataAndJoin();
-    }else{
-      window.location.href='join.html';
-    }
-  }else{
-    // Not authenticated - redirect to auth page
-    showLoading('Not signed in','Redirecting you to the sign-in page...');
-    setTimeout(()=>{window.location.href=AUTH_URL;},600);
-  }
-});
+                // Translate toggle
+                this.elements.translateToggle.addEventListener('change', (e) => {
+                    const status = e.target.checked ? 'enabled' : 'disabled';
+                    this.showNotification(`Auto-translation ${status}`);
+                });
+            }
 
-// If opened via file:// protocol, show a clear warning (Firebase auth requires http/https)
-if(location.protocol === 'file:'){
-  showLoading('Local file detected','Please open this app via a local web server (http://localhost) or a hosted URL. Firebase auth won\'t work on file://',true);
-}
+            setupTimers() {
+                // Update current time
+                setInterval(() => {
+                    const now = new Date();
+                    this.elements.currentTime.textContent = 
+                        `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                }, 60000);
 
-async function loadUserProfile(u){
-  const snap=await db.ref(`/users/${u.uid}`).once('value');
-  let p=snap.val();
-  if(!p||!p.personalId){
-    const pid=generateId();
-    p={name:u.displayName||u.email?.split('@')[0]||'User',email:u.email,personalId:pid,language:'en',createdAt:p?.createdAt||Date.now()};
-    if(u.photoURL)p.photoURL=u.photoURL;
-    await db.ref(`/users/${u.uid}`).set(p);
-  }
-  userProfile=p;userLanguage=p.language||'en';
-}
+                // Call timer
+                this.state.timerInterval = setInterval(() => {
+                    this.state.callTime++;
+                    const minutes = Math.floor(this.state.callTime / 60);
+                    const seconds = this.state.callTime % 60;
+                    this.elements.callTimer.textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
 
-async function loadLanguages(){
-  try{
-    const snap=await db.ref('/languages').once('value');
-    const d=snap.val();if(!d)return;
-    languagesList=[];
-    if(Array.isArray(d))languagesList=d.map(l=>({code:l.code,name:l.name}));
-    else for(const[k,v]of Object.entries(d))languagesList.push({code:v.code||k,name:v.name||v});
-    populateLangSelects();
-  }catch(e){
-    languagesList=[
-      {code:'en',name:'English'},{code:'en-US',name:'English (US)'},{code:'en-GB',name:'English (UK)'},{code:'en-AU',name:'English (Australia)'},{code:'en-CA',name:'English (Canada)'},
-      {code:'es',name:'Spanish'},{code:'es-ES',name:'Spanish (Spain)'},{code:'es-MX',name:'Spanish (Mexico)'},{code:'es-AR',name:'Spanish (Argentina)'},{code:'es-CO',name:'Spanish (Colombia)'},
-      {code:'fr',name:'French'},{code:'fr-FR',name:'French (France)'},{code:'fr-CA',name:'French (Canada)'},{code:'fr-BE',name:'French (Belgium)'},{code:'fr-CH',name:'French (Switzerland)'},
-      {code:'de',name:'German'},{code:'de-DE',name:'German (Germany)'},{code:'de-AT',name:'German (Austria)'},{code:'de-CH',name:'German (Switzerland)'},
-      {code:'it',name:'Italian'},{code:'it-IT',name:'Italian (Italy)'},
-      {code:'pt',name:'Portuguese'},{code:'pt-PT',name:'Portuguese (Portugal)'},{code:'pt-BR',name:'Portuguese (Brazil)'},
-      {code:'nl',name:'Dutch'},{code:'nl-NL',name:'Dutch (Netherlands)'},{code:'nl-BE',name:'Dutch (Belgium)'},{code:'vls',name:'Flemish'},
-      {code:'zh',name:'Chinese'},{code:'zh-CN',name:'Chinese (Simplified)'},{code:'zh-TW',name:'Chinese (Traditional)'},{code:'zh-HK',name:'Chinese (Hong Kong)'},
-      {code:'byv',name:'Medumba'},
-      {code:'ja',name:'Japanese'},{code:'ko',name:'Korean'},
-      {code:'ar',name:'Arabic'},{code:'ar-SA',name:'Arabic (Saudi Arabia)'},{code:'ar-EG',name:'Arabic (Egypt)'},{code:'ar-AE',name:'Arabic (UAE)'},
-      {code:'hi',name:'Hindi'},{code:'ru',name:'Russian'},{code:'tr',name:'Turkish'},{code:'pl',name:'Polish'},{code:'vi',name:'Vietnamese'},{code:'th',name:'Thai'},{code:'id',name:'Indonesian'},
-      {code:'tl',name:'Filipino/Tagalog'},{code:'fil',name:'Filipino'},
-      {code:'sv',name:'Swedish'},{code:'da',name:'Danish'},{code:'no',name:'Norwegian'},{code:'fi',name:'Finnish'},
-      {code:'cs',name:'Czech'},{code:'sk',name:'Slovak'},{code:'hu',name:'Hungarian'},{code:'ro',name:'Romanian'},{code:'el',name:'Greek'},{code:'bg',name:'Bulgarian'},{code:'uk',name:'Ukrainian'},
-      {code:'he',name:'Hebrew'},{code:'fa',name:'Persian'},{code:'ur',name:'Urdu'},
-      {code:'bn',name:'Bengali'},{code:'ta',name:'Tamil'},{code:'te',name:'Telugu'},{code:'mr',name:'Marathi'},{code:'gu',name:'Gujarati'},{code:'kn',name:'Kannada'},{code:'ml',name:'Malayalam'},{code:'si',name:'Sinhala'},{code:'ne',name:'Nepali'},{code:'pa',name:'Punjabi'},
-      {code:'ms',name:'Malay'},{code:'my',name:'Burmese'},{code:'km',name:'Khmer'},{code:'lo',name:'Lao'},
-      {code:'ka',name:'Georgian'},{code:'hy',name:'Armenian'},{code:'az',name:'Azerbaijani'},{code:'kk',name:'Kazakh'},{code:'uz',name:'Uzbek'},
-      {code:'sw',name:'Swahili'},{code:'am',name:'Amharic'},{code:'zu',name:'Zulu'},{code:'af',name:'Afrikaans'},
-      {code:'sr',name:'Serbian'},{code:'hr',name:'Croatian'},{code:'bs',name:'Bosnian'},{code:'sl',name:'Slovenian'},{code:'mk',name:'Macedonian'},{code:'sq',name:'Albanian'},
-      {code:'et',name:'Estonian'},{code:'lv',name:'Latvian'},{code:'lt',name:'Lithuanian'},{code:'is',name:'Icelandic'},{code:'mt',name:'Maltese'},
-      {code:'ca',name:'Catalan'},{code:'gl',name:'Galician'},{code:'eu',name:'Basque'},{code:'cy',name:'Welsh'},{code:'ga',name:'Irish'}
-    ];
-    populateLangSelects();
-  }
-}
+            setupMockAPIs() {
+                // Mock OpenAI Whisper API
+                window.mockWhisperAPI = async (audioBlob) => {
+                    return new Promise((resolve) => {
+                        setTimeout(() => {
+                            const transcriptions = [
+                                "I think we should move forward with the project timeline.",
+                                "Can you share your screen to show the design mockups?",
+                                "The deadline is next Friday for the first draft submission.",
+                                "We need to coordinate with the marketing team on this.",
+                                "Let me check the budget allocation and get back to you.",
+                                "That sounds like a solid plan to me.",
+                                "Could you please repeat that last point about the timeline?",
+                                "I agree with your assessment completely.",
+                                "We might need additional resources for the implementation phase.",
+                                "Let's schedule a follow-up meeting for next week Wednesday."
+                            ];
+                            resolve({
+                                text: transcriptions[Math.floor(Math.random() * transcriptions.length)],
+                                language: this.state.sourceLang,
+                                confidence: 0.95
+                            });
+                        }, 500);
+                    });
+                };
 
-async function loadAdminConfig(){
-  try{
-    const snap=await db.ref('/admin/server_config').once('value');
-    const cfg=snap.val()||{};
-    openaiKey = cfg.openai_key || localStorage.getItem('openai_api_key');
-    geminiKey = cfg.gemini_key || localStorage.getItem('gemini_api_key');
-    sttProvider = cfg.stt_provider || 'openai';
-    const cfgStreamKey = cfg.stream_api_key || localStorage.getItem('stream_api_key');
-    const cfgStreamSecret = cfg.stream_secret_key || localStorage.getItem('stream_secret_key');
-    if(cfgStreamKey) STREAM_API_KEY = cfgStreamKey;
-    if(cfgStreamSecret) STREAM_SECRET_KEY = cfgStreamSecret;
-    if(cfg.cartesia_key) cartesiaKey = cfg.cartesia_key;
-    if(cfg.cartesia_model_id) cartesiaModelId = cfg.cartesia_model_id;
-    if(cfg.llm_api_key) CEREBRAS_API_KEY = cfg.llm_api_key;
-    if(cfg.deepgram_key) deepgramKey = cfg.deepgram_key;
-    if(openaiKey) localStorage.setItem('openai_api_key', openaiKey);
-    if(geminiKey) localStorage.setItem('gemini_api_key', geminiKey);
-    if(cfgStreamKey) localStorage.setItem('stream_api_key', cfgStreamKey);
-    if(cfgStreamSecret) localStorage.setItem('stream_secret_key', cfgStreamSecret);
-  }catch(e){
-    console.error('Admin config load:', e);
-  }
-}
+                // Mock GPT-4 Translation API
+                window.mockGPTTranslate = async (text, sourceLang, targetLang) => {
+                    return new Promise((resolve) => {
+                        setTimeout(() => {
+                            const translations = {
+                                en: {
+                                    es: "Hola, ¿cómo estás?",
+                                    fr: "Bonjour, comment allez-vous?",
+                                    de: "Hallo, wie geht es dir?",
+                                    zh: "你好，你好吗？",
+                                    ja: "こんにちは、お元気ですか？"
+                                },
+                                es: {
+                                    en: "Hello, how are you?",
+                                    fr: "Bonjour, comment allez-vous?",
+                                    de: "Hallo, wie geht es dir?"
+                                }
+                            };
+                            
+                            const translation = translations[sourceLang]?.[targetLang] || 
+                                              `[Translated from ${this.getLanguageName(sourceLang)} to ${this.getLanguageName(targetLang)}]: ${text}`;
+                            
+                            resolve({
+                                translatedText: translation,
+                                sourceLanguage: sourceLang,
+                                targetLanguage: targetLang
+                            });
+                        }, 300);
+                    });
+                };
 
-function populateLangSelects(){
-  const opts=languagesList.map(l=>`<option value="${l.code}">${l.name}</option>`).join('');
-  $('userLanguageSelect').innerHTML=opts;$('settingsLanguageSelect').innerHTML=opts;
-  if(userProfile?.language){$('userLanguageSelect').value=userProfile.language;$('settingsLanguageSelect').value=userProfile.language}
-}
+                // Mock ElevenLabs TTS API
+                window.mockElevenLabsTTS = async (text, language) => {
+                    return new Promise((resolve) => {
+                        setTimeout(() => {
+                            // Create a synthetic audio blob (simulated)
+                            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                            const oscillator = audioContext.createOscillator();
+                            const gainNode = audioContext.createGain();
+                            
+                            oscillator.connect(gainNode);
+                            gainNode.connect(audioContext.destination);
+                            
+                            oscillator.frequency.value = 440;
+                            oscillator.type = 'sine';
+                            
+                            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
+                            
+                            resolve({
+                                audioUrl: 'data:audio/wav;base64,UklGRnoAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoAAAB=',
+                                duration: 1.5,
+                                language: language
+                            });
+                        }, 400);
+                    });
+                };
+            }
 
-async function applyJoinDataAndJoin(){
-  const raw = sessionStorage.getItem('original_join_data');
-  if(!raw) return;
-  const data = JSON.parse(raw);
-  $('displayNameInput').value = data.displayName || (userProfile?.name || currentUser.displayName || 'User');
-  $('roomIdInput').value = data.roomId || 'ORBIT';
-  await enumerateDevices();
-  if(data.sourceLanguage) {
-    sourceLanguage = data.sourceLanguage;
-    sourceLanguageExplicit = true;
-  } else if(data.listenLanguage) {
-    sourceLanguage = data.listenLanguage;
-  }
-  if(data.listenLanguage) {
-    userLanguage = data.listenLanguage;
-    $('userLanguageSelect').value = data.listenLanguage;
-  }
-  if(data.micDeviceId) $('micSelect').value = data.micDeviceId;
-  if(data.camDeviceId) $('camSelect').value = data.camDeviceId;
-  if(data.speakerDeviceId) $('speakerSelect').value = data.speakerDeviceId;
-  prejoinMicEnabled = data.micEnabled !== false;
-  prejoinCamEnabled = data.camEnabled !== false;
-  sessionStorage.removeItem('original_join_data');
-  await joinRoom();
-}
+            simulateAIResponse() {
+                if (!this.state.isTranscribing) return;
 
-$('btnLogout').addEventListener('click',()=>auth.signOut());
+                // Simulate AI transcription every 3-5 seconds
+                setTimeout(() => {
+                    if (this.state.isTranscribing) {
+                        this.simulateTranscription();
+                        this.simulateAIResponse();
+                    }
+                }, 3000 + Math.random() * 2000);
+            }
 
-// Pre-join
-async function showPrejoinScreen(){
-  $('prejoinOverlay').classList.add('active');
-  const name=userProfile?.name||currentUser.displayName||'User';
-  $('prejoinName').textContent=name;$('prejoinEmail').textContent=userProfile?.email||currentUser.email||'';
-  $('displayNameInput').value=name;
-  $('prejoinAvatar').textContent=name.charAt(0).toUpperCase();
-  if(userProfile?.photoURL||currentUser.photoURL)$('prejoinAvatar').innerHTML=`<img src="${userProfile?.photoURL||currentUser.photoURL}"/>`;
-  const p=new URLSearchParams(location.search);if(p.get('room'))$('roomIdInput').value=p.get('room').toUpperCase();
-  await enumerateDevices();await startPreviewStream();
-}
+            async simulateTranscription() {
+                const speakers = ['You', 'Sarah'];
+                const speaker = speakers[Math.floor(Math.random() * speakers.length)];
+                
+                // Mock Whisper API call
+                try {
+                    const result = await window.mockWhisperAPI(null);
+                    const text = result.text;
+                    
+                    // Mock GPT translation
+                    const translation = await window.mockGPTTranslate(text, this.state.sourceLang, this.state.targetLang);
+                    
+                    // Add transcription bubble
+                    this.addTranscriptionBubble(speaker, text, translation.translatedText);
+                    
+                    // Auto-play TTS for remote speaker
+                    if (speaker === 'Sarah' && this.state.aiServices.elevenlabs) {
+                        await this.playTTS(text, this.state.targetLang);
+                    }
+                    
+                } catch (error) {
+                    console.error('Transcription error:', error);
+                }
+            }
 
-// Update avatar when display name changes
-$('displayNameInput').addEventListener('input',e=>{
-  const val=e.target.value.trim();
-  if(val){
-    $('prejoinName').textContent=val;
-    if(!userProfile?.photoURL && !currentUser?.photoURL){
-      $('prejoinAvatar').textContent=val.charAt(0).toUpperCase();
-    }
-  }
-});
+            addTranscriptionBubble(speaker, text, translation) {
+                const bubble = document.createElement('div');
+                bubble.className = 'transcription-bubble';
+                bubble.innerHTML = `
+                    <div class="transcription-speaker">
+                        <i class="fas fa-user"></i> ${speaker}
+                    </div>
+                    <div class="transcription-text">${text}</div>
+                    <div class="speech-visualizer">
+                        <div class="speech-bar"></div>
+                        <div class="speech-bar"></div>
+                        <div class="speech-bar"></div>
+                        <div class="speech-bar"></div>
+                        <div class="speech-bar"></div>
+                    </div>
+                    <div class="translation-text">
+                        <i class="fas fa-language"></i> ${translation}
+                    </div>
+                `;
+                
+                this.elements.transcriptionContainer.appendChild(bubble);
+                
+                // Limit to 4 bubbles
+                if (this.elements.transcriptionContainer.children.length > 4) {
+                    this.elements.transcriptionContainer.removeChild(this.elements.transcriptionContainer.children[0]);
+                }
+                
+                // Scroll to bottom
+                this.elements.transcriptionContainer.scrollTop = this.elements.transcriptionContainer.scrollHeight;
+                
+                // Add to history
+                this.state.transcriptions.push({
+                    speaker,
+                    text,
+                    translation,
+                    timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                });
+            }
 
-async function enumerateDevices(){
-  try{
-    const devs=await navigator.mediaDevices.enumerateDevices();
-    const mics=devs.filter(d=>d.kind==='audioinput'),cams=devs.filter(d=>d.kind==='videoinput'),spks=devs.filter(d=>d.kind==='audiooutput');
-    $('micSelect').innerHTML=mics.map(d=>`<option value="${d.deviceId}">${d.label||'Microphone '+(mics.indexOf(d)+1)}</option>`).join('');
-    $('camSelect').innerHTML=cams.map(d=>`<option value="${d.deviceId}">${d.label||'Camera '+(cams.indexOf(d)+1)}</option>`).join('');
-    $('speakerSelect').innerHTML=spks.map(d=>`<option value="${d.deviceId}">${d.label||'Speaker '+(spks.indexOf(d)+1)}</option>`).join('');
-    $('settingsMicSelect').innerHTML=$('micSelect').innerHTML;$('settingsCamSelect').innerHTML=$('camSelect').innerHTML;$('settingsSpeakerSelect').innerHTML=$('speakerSelect').innerHTML;
-  }catch(e){console.error('Enum devices:',e)}
-}
+            async sendMessage() {
+                const text = this.elements.chatInput.value.trim();
+                if (!text) return;
+                
+                // Add message
+                this.addChatMessage(text, 'sent');
+                this.elements.chatInput.value = '';
+                
+                // Auto-translate if enabled
+                if (this.elements.translateToggle.checked) {
+                    await this.translateAndAddToMessage(text, 'sent');
+                }
+                
+                // Simulate AI response
+                setTimeout(async () => {
+                    const responses = [
+                        "Thanks for the update! I'll review that.",
+                        "I understand what you're saying. Let me think about it.",
+                        "That's a valid point. We should consider that.",
+                        "Great idea! Let's implement that in the next phase.",
+                        "I agree with your approach completely."
+                    ];
+                    const response = responses[Math.floor(Math.random() * responses.length)];
+                    
+                    this.addChatMessage(response, 'received');
+                    
+                    if (this.elements.translateToggle.checked) {
+                        await this.translateAndAddToMessage(response, 'received');
+                    }
+                }, 1000 + Math.random() * 1000);
+            }
 
-async function startPreviewStream(){
-  try{
-    prejoinStream=await navigator.mediaDevices.getUserMedia({video:$('camSelect').value?{deviceId:{exact:$('camSelect').value}}:true,audio:$('micSelect').value?{deviceId:{exact:$('micSelect').value}}:true});
-    $('prejoinVideo').srcObject=prejoinStream;$('prejoinVideoOff').classList.add('hidden');await enumerateDevices();
-  }catch(e){console.error('Preview:',e);$('prejoinVideoOff').classList.remove('hidden')}
-}
+            addChatMessage(text, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                messageDiv.innerHTML = `
+                    <div class="message-text">${text}</div>
+                    <div class="message-actions">
+                        <div class="message-action" title="Play as audio">
+                            <i class="fas fa-volume-up"></i>
+                        </div>
+                        <div class="message-action" title="Copy text">
+                            <i class="fas fa-copy"></i>
+                        </div>
+                    </div>
+                `;
+                
+                // Add event listeners
+                const actions = messageDiv.querySelector('.message-actions');
+                const playBtn = actions.children[0];
+                const copyBtn = actions.children[1];
+                
+                playBtn.addEventListener('click', () => this.playTTS(text, this.state.targetLang));
+                copyBtn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(text);
+                    this.showNotification('Text copied to clipboard');
+                });
+                
+                this.elements.chatMessages.appendChild(messageDiv);
+                this.state.chatMessages.push({ text, sender, timestamp: new Date() });
+                this.updateChatStats();
+                
+                // Scroll to bottom
+                this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+            }
 
-$('prejoinMicToggle').addEventListener('click',()=>{prejoinMicEnabled=!prejoinMicEnabled;$('prejoinMicToggle').classList.toggle('off',!prejoinMicEnabled);$('prejoinMicToggle').innerHTML=`<i class="fas fa-microphone${prejoinMicEnabled?'':'-slash'}"></i>`;if(prejoinStream)prejoinStream.getAudioTracks().forEach(t=>t.enabled=prejoinMicEnabled)});
-$('prejoinCamToggle').addEventListener('click',()=>{prejoinCamEnabled=!prejoinCamEnabled;$('prejoinCamToggle').classList.toggle('off',!prejoinCamEnabled);$('prejoinCamToggle').innerHTML=`<i class="fas fa-video${prejoinCamEnabled?'':'-slash'}"></i>`;$('prejoinVideoOff').classList.toggle('hidden',prejoinCamEnabled);if(prejoinStream)prejoinStream.getVideoTracks().forEach(t=>t.enabled=prejoinCamEnabled)});
-$('micSelect').addEventListener('change',startPreviewStream);$('camSelect').addEventListener('change',startPreviewStream);
-$('roomIdInput').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'')});
-$('btnJoinRoom').addEventListener('click',joinRoom);$('roomIdInput').addEventListener('keypress',e=>{if(e.key==='Enter')joinRoom()});
+            async translateAndAddToMessage(text, sender) {
+                try {
+                    const translation = await window.mockGPTTranslate(text, this.state.sourceLang, this.state.targetLang);
+                    const messageDivs = this.elements.chatMessages.querySelectorAll('.message');
+                    const lastMessage = messageDivs[messageDivs.length - 1];
+                    
+                    const translationDiv = document.createElement('div');
+                    translationDiv.className = 'message-translation';
+                    translationDiv.innerHTML = `
+                        <i class="fas fa-language"></i> ${translation.translatedText}
+                    `;
+                    
+                    lastMessage.appendChild(translationDiv);
+                } catch (error) {
+                    console.error('Translation error:', error);
+                }
+            }
 
-function joinOrbitRoom(){
-  $('roomIdInput').value='ORBIT';
-  joinRoom();
-}
+            async playTTS(text, language) {
+                if (!this.state.aiServices.elevenlabs) {
+                    this.showNotification('TTS service unavailable', 'warning');
+                    return;
+                }
+                
+                try {
+                    const ttsResult = await window.mockElevenLabsTTS(text, language);
+                    
+                    this.state.currentTTS = {
+                        text,
+                        language,
+                        audioUrl: ttsResult.audioUrl
+                    };
+                    
+                    // Show TTS player
+                    this.elements.ttsText.textContent = `Playing: "${text.substring(0, 30)}..."`;
+                    this.elements.ttsPlayer.style.display = 'flex';
+                    
+                    // Simulate audio playback
+                    this.elements.ttsAudio.src = ttsResult.audioUrl;
+                    this.elements.ttsAudio.play();
+                    this.state.isTTSPlaying = true;
+                    this.elements.ttsPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    
+                    // Auto-hide after playback
+                    setTimeout(() => {
+                        this.stopTTS();
+                        this.elements.ttsPlayer.style.display = 'none';
+                    }, ttsResult.duration * 1000);
+                    
+                } catch (error) {
+                    console.error('TTS error:', error);
+                    this.showNotification('Failed to play audio', 'error');
+                }
+            }
 
-// Auto-join Orbit room if no room specified
-function autoJoinOrbitIfEmpty(){
-  const rid = $('roomIdInput').value.trim();
-  if(!rid){
-    $('roomIdInput').value = 'ORBIT';
-  }
-}
+            toggleTTS() {
+                if (this.state.isTTSPlaying) {
+                    this.elements.ttsAudio.pause();
+                    this.state.isTTSPlaying = false;
+                    this.elements.ttsPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
+                } else if (this.state.currentTTS) {
+                    this.elements.ttsAudio.play();
+                    this.state.isTTSPlaying = true;
+                    this.elements.ttsPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                }
+            }
 
-async function joinRoom(){
-  const rid=$('roomIdInput').value.trim().toUpperCase();if(!rid||rid.length<4){showToast('Enter valid room ID');return}
-  const displayName=$('displayNameInput').value.trim();if(!displayName){showToast('Enter your display name');return}
-  userLanguage=$('userLanguageSelect').value;
-  if(!sourceLanguageExplicit) sourceLanguage=userLanguage;
-  selectedMicId=$('micSelect').value;selectedCamId=$('camSelect').value;selectedSpeakerId=$('speakerSelect').value;
-  
-  // Update user profile with new display name
-  if(displayName!==userProfile?.name){
-    await db.ref(`/users/${currentUser.uid}/name`).set(displayName);
-    userProfile.name=displayName;
-  }
-  await db.ref(`/users/${currentUser.uid}/language`).set(userLanguage);
-  
-  $('btnJoinRoom').disabled=true;$('btnJoinRoom').innerHTML='<i class="fas fa-spinner fa-spin"></i> Joining...';
-  
-  try{
-    // For ORBIT room, use default configuration
-    if(rid === 'ORBIT'){
-      currentRoom = rid;
-      roomConfig = {
-        type: 'classroom',
-        name: 'Orbit Demo Room',
-        deepgramKey: deepgramKey,
-        cartesiaKey: cartesiaKey,
-        cartesiaModelId: cartesiaModelId,
-        features: {
-          video: true,
-          transcription: true,
-          translation: true,
-          quiz: true
+            stopTTS() {
+                this.elements.ttsAudio.pause();
+                this.elements.ttsAudio.currentTime = 0;
+                this.state.isTTSPlaying = false;
+                this.elements.ttsPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
+            }
+
+            toggleMute() {
+                this.state.isMuted = !this.state.isMuted;
+                this.elements.muteBtn.classList.toggle('active', !this.state.isMuted);
+                this.elements.muteBtn.innerHTML = this.state.isMuted ? 
+                    '<i class="fas fa-microphone-slash"></i>' : 
+                    '<i class="fas fa-microphone"></i>';
+                this.showNotification(this.state.isMuted ? 'Microphone muted' : 'Microphone on');
+            }
+
+            toggleVideo() {
+                this.state.isVideoOff = !this.state.isVideoOff;
+                this.elements.videoBtn.classList.toggle('active', !this.state.isVideoOff);
+                this.elements.videoBtn.innerHTML = this.state.isVideoOff ? 
+                    '<i class="fas fa-video-slash"></i>' : 
+                    '<i class="fas fa-video"></i>';
+                this.showNotification(this.state.isVideoOff ? 'Video turned off' : 'Video turned on');
+            }
+
+            toggleTranscription() {
+                this.state.isTranscribing = !this.state.isTranscribing;
+                this.elements.transcribeBtn.classList.toggle('ai-active', this.state.isTranscribing);
+                this.elements.recordingIndicator.style.display = this.state.isTranscribing ? 'block' : 'none';
+                
+                if (this.state.isTranscribing) {
+                    this.showNotification('AI Transcription enabled');
+                    this.simulateAIResponse();
+                } else {
+                    this.showNotification('AI Transcription disabled');
+                    this.elements.transcriptionContainer.innerHTML = '';
+                }
+            }
+
+            toggleChat() {
+                this.state.isChatOpen = !this.state.isChatOpen;
+                this.elements.chatPanel.classList.toggle('open', this.state.isChatOpen);
+                if (this.state.isChatOpen) {
+                    this.elements.aiProcessingPanel.classList.remove('open');
+                    this.state.isAiPanelOpen = false;
+                    this.elements.chatInput.focus();
+                }
+            }
+
+            openAiPanel() {
+                this.state.isAiPanelOpen = true;
+                this.elements.aiProcessingPanel.classList.add('open');
+                this.elements.chatPanel.classList.remove('open');
+                this.state.isChatOpen = false;
+            }
+
+            closeChat() {
+                this.state.isChatOpen = false;
+                this.elements.chatPanel.classList.remove('open');
+            }
+
+            closeAiPanel() {
+                this.state.isAiPanelOpen = false;
+                this.elements.aiProcessingPanel.classList.remove('open');
+            }
+
+            async startVoiceInput() {
+                this.showNotification('Listening... Speak now', 'info');
+                
+                // Simulate voice input processing
+                setTimeout(async () => {
+                    const phrases = [
+                        "Let's schedule the meeting for tomorrow at 3 PM",
+                        "I need you to review the document I just shared",
+                        "Can we extend the deadline by two days?",
+                        "The budget needs to be increased by 20 percent",
+                        "I'll send you the updated files shortly"
+                    ];
+                    
+                    const spokenText = phrases[Math.floor(Math.random() * phrases.length)];
+                    this.elements.chatInput.value = spokenText;
+                    
+                    // Auto-transcribe using mock Whisper
+                    try {
+                        const result = await window.mockWhisperAPI(null);
+                        this.elements.chatInput.value = result.text;
+                        this.showNotification('Voice input processed');
+                    } catch (error) {
+                        console.error('Voice input error:', error);
+                    }
+                }, 1500);
+            }
+
+            endCall() {
+                clearInterval(this.state.timerInterval);
+                
+                if (confirm('End video call?')) {
+                    // Update UI
+                    this.elements.callTimer.textContent = '00:47';
+                    this.elements.endCallBtn.innerHTML = '<i class="fas fa-phone"></i>';
+                    this.elements.endCallBtn.style.background = 'linear-gradient(135deg, var(--success-green), #27ae60)';
+                    this.elements.endCallBtn.title = 'Call again';
+                    
+                    // Disable controls
+                    [this.elements.muteBtn, this.elements.videoBtn, this.elements.transcribeBtn, this.elements.chatBtn]
+                        .forEach(btn => btn.disabled = true);
+                    
+                    this.showNotification('Call ended');
+                    
+                    // Redirect after delay
+                    setTimeout(() => {
+                        alert('Call ended successfully. Thank you for using Messenger AI Video Call.');
+                        // In real app: window.location.href = '/';
+                    }, 3000);
+                } else {
+                    // Restart timer if user cancels
+                    this.setupTimers();
+                }
+            }
+
+            updateChatStats() {
+                const messageCount = this.state.chatMessages.length;
+                const aiStatus = this.elements.translateToggle.checked ? 'AI ON' : 'AI OFF';
+                this.elements.chatStats.textContent = `${messageCount} messages • ${aiStatus}`;
+            }
+
+            getLanguageName(code) {
+                const languages = {
+                    en: 'English',
+                    es: 'Spanish',
+                    fr: 'French',
+                    de: 'German',
+                    zh: 'Chinese',
+                    ja: 'Japanese',
+                    ko: 'Korean',
+                    ar: 'Arabic',
+                    ru: 'Russian',
+                    pt: 'Portuguese',
+                    it: 'Italian'
+                };
+                return languages[code] || code;
+            }
+
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.textContent = message;
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 120px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: ${type === 'error' ? 'linear-gradient(135deg, var(--danger-red), #c0392b)' : 
+                               type === 'success' ? 'linear-gradient(135deg, var(--success-green), #27ae60)' : 
+                               type === 'warning' ? 'linear-gradient(135deg, var(--warning-yellow), #e67e22)' : 
+                               'linear-gradient(135deg, var(--messenger-blue), var(--messenger-blue-hover))'};
+                    color: white;
+                    padding: 14px 24px;
+                    border-radius: 16px;
+                    z-index: 1000;
+                    font-size: 14px;
+                    font-weight: 500;
+                    animation: slideInUp 0.3s ease-out;
+                    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    max-width: 80%;
+                    text-align: center;
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Play notification sound
+                const audio = document.getElementById('notificationAudio');
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log('Audio play failed:', e));
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    notification.style.transform = 'translateX(-50%) translateY(-20px)';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+            }
+
+            simulateVideoStreams() {
+                // Create canvas-based simulated video feeds
+                const createVideoFeed = (width, height, text, color1, color2) => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Gradient background
+                    const gradient = ctx.createLinearGradient(0, 0, width, height);
+                    gradient.addColorStop(0, color1);
+                    gradient.addColorStop(1, color2);
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, 0, width, height);
+                    
+                    // Draw face
+                    ctx.beginPath();
+                    ctx.arc(width/2, height/2, Math.min(width, height)/4, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+                    ctx.fill();
+                    
+                    // Draw eyes
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(width/2 - 25, height/2 - 15, 8, 0, Math.PI * 2);
+                    ctx.arc(width/2 + 25, height/2 - 15, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Draw mouth
+                    ctx.beginPath();
+                    ctx.arc(width/2, height/2 + 20, 15, 0, Math.PI);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    // Add text
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 24px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(text, width/2, height/2 + 70);
+                    
+                    return canvas.toDataURL();
+                };
+                
+                // Set video feeds
+                this.elements.localVideo.src = createVideoFeed(200, 300, 'You', '#0084ff', '#00c6ff');
+                this.elements.remoteVideo.src = createVideoFeed(800, 600, 'Sarah', '#667eea', '#764ba2');
+            }
         }
-      };
-    } else {
-      // For other rooms, try to get configuration from Firebase
-      const snap=await db.ref(`/groups/${rid}`).once('value');
-      let cfg=snap.val();
-      if(!cfg){
-        const ps=await db.ref('/users').orderByChild('personalId').equalTo(rid).once('value');
-        if(ps.exists()){
-          const ud=Object.values(ps.val())[0];
-          cfg={type:'personal',ownerName:ud.name};
-          const dc=await db.ref('/groups/DEFAULT').once('value');
-          if(dc.val())Object.assign(cfg,dc.val());
-        } else {
-          showToast('Room not found');
-          $('btnJoinRoom').disabled=false;
-          $('btnJoinRoom').innerHTML='<i class="fas fa-sign-in-alt"></i> Join Class';
-          return;
-        }
-      }
-      currentRoom=rid;
-      roomConfig=cfg;
-    }
-    
-    history.replaceState({},'',`${location.pathname}?room=${rid}`);
-    if(prejoinStream){prejoinStream.getTracks().forEach(t=>t.stop());prejoinStream=null}
-    $('prejoinOverlay').classList.remove('active');$('appContainer').classList.add('active');
-    await initRoom();
-    
-  }catch(e){
-    console.error('Join room error:', e);
-    showToast('Failed to join room: ' + e.message);
-  }
-  
-  $('btnJoinRoom').disabled=false;
-  $('btnJoinRoom').innerHTML='<i class="fas fa-sign-in-alt"></i> Join Class';
-}
 
-async function initRoom(){
-  console.log('🏢 Initializing room:', currentRoom);
-  
-  try {
-    $('displayRoomId').textContent=currentRoom;
-    meetingStartTime=Date.now();
-    meetingTimerInterval=setInterval(updateMeetingTimer,1000);
-    
-    console.log('🎤🎥 Requesting media access...');
-    localStream=await navigator.mediaDevices.getUserMedia({
-      video: selectedCamId ? {deviceId:{exact:selectedCamId}} : true,
-      audio: {
-        deviceId: selectedMicId ? {exact:selectedMicId} : undefined,
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true
-      }
-    });
-    
-    console.log('📸 Media stream acquired');
-    localStream.getAudioTracks().forEach(t=>t.enabled=prejoinMicEnabled);
-    localStream.getVideoTracks().forEach(t=>t.enabled=prejoinCamEnabled);
-    if(!prejoinMicEnabled)$('btnMic').classList.add('muted');
-    if(!prejoinCamEnabled)$('btnCamera').classList.add('muted');
-    
-    console.log('👤 Adding local participant');
-    addParticipant({
-      id: currentUser.uid,
-      name: userProfile?.name || currentUser?.displayName || 'You',
-      stream: localStream,
-      isLocal: true,
-      micEnabled: prejoinMicEnabled,
-      camEnabled: prejoinCamEnabled,
-      photoURL: userProfile?.photoURL || currentUser.photoURL
-    });
-    
-    // Start transcription if available
-    if(sttProvider){
-      console.log('🎤 Starting transcription...');
-      startTranscription();
-    } else {
-      console.log('⚠️ No STT provider configured, transcription disabled');
-    }
-    
-    console.log('📡 Registering presence...');
-    await registerPresence();
-    
-    console.log('👥 Setting up participant listeners...');
-    listenToParticipants();
-    listenToTranscripts();
-    
-    console.log('🎥 Initializing video system...');
-    await initStreamVideo();
-    
-    console.log('✅ Room initialization complete');
-    showToast('Successfully joined ' + currentRoom);
-    
-  } catch(e) {
-    console.error('❌ Room initialization error:', e);
-    showToast('Room setup failed: ' + e.message);
-    // Don't fail completely - try to continue with basic functionality
-  }
-}
-
-function updateMeetingTimer(){const e=Math.floor((Date.now()-meetingStartTime)/1000);const d=formatTime(e);$('timerDisplay').textContent=d;$('mobileTimerDisplay').textContent=d}
-
-function generateStreamToken(userId){
-  const header = { alg: 'HS256', typ: 'JWT' };
-  const tNow = KJUR.jws.IntDate.get('now');
-  const tEnd = KJUR.jws.IntDate.get('now + 1hour');
-  const payload = {
-    user_id: userId,
-    iss: `video:${STREAM_API_KEY}`,
-    iat: tNow,
-    exp: tEnd
-  };
-  return KJUR.jws.JWS.sign('HS256', JSON.stringify(header), JSON.stringify(payload), { utf8: STREAM_SECRET_KEY });
-}
-
-async function initStreamVideo(){
-  console.log('🎥 Initializing Stream Video...');
-  try{
-    let attempts = 0;
-    while(!window.StreamVideoClient && attempts < 50){
-      await new Promise(r => setTimeout(r, 200));
-      attempts++;
-    }
-    if(!window.StreamVideoClient){
-      throw new Error('Stream SDK failed to load');
-    }
-
-    const token = generateStreamToken(currentUser.uid);
-    streamClient = new StreamVideoClient({
-      apiKey: STREAM_API_KEY,
-      user: {
-        id: currentUser.uid,
-        name: userProfile?.name || currentUser.displayName || 'User',
-        image: userProfile?.photoURL || currentUser.photoURL
-      },
-      token
-    });
-
-    streamCall = streamClient.call('default', currentRoom);
-    await streamCall.join({ create: true });
-
-    if(prejoinMicEnabled === false) await streamCall.microphone.disable();
-    else await streamCall.microphone.enable();
-    if(prejoinCamEnabled === false) await streamCall.camera.disable();
-    else await streamCall.camera.enable();
-
-    if(streamCall.state.participants$){
-      streamCall.state.participants$.subscribe(updateStreamParticipants);
-    }
-
-    showToast('Connected to Stream video room');
-  }catch(e){
-    console.error('Stream video init error:', e);
-    showToast('Video system error: ' + e.message);
-  }
-}
-
-function updateStreamParticipants(streamParticipants){
-  participants.clear();
-  streamParticipants.forEach(p => {
-    const id = p.userId || p.sessionId;
-    participants.set(id, {
-      id,
-      name: p.name || p.userId,
-      isLocal: p.isLocalParticipant,
-      stream: p.videoStream || null,
-      audioStream: p.audioStream || null,
-      camEnabled: !!p.videoStream,
-      micEnabled: !!p.audioStream,
-      handRaised: false
-    });
-  });
-  updateVideoGrid();
-  updateStudentsList();
-  $('participantCount').textContent = participants.size;
-  $('studentsBadgeMenu').textContent = participants.size;
-}
-
-async function leaveStreamCall(){
-  if(streamCall){
-    try{
-      await streamCall.leave();
-      console.log('Left Stream call');
-    }catch(e){
-      console.error('Error leaving call:',e);
-    }
-    streamCall=null;
-  }
-  if(streamClient){
-    try{
-      await streamClient.disconnectUser();
-    }catch(e){}
-    streamClient=null;
-  }
-}
-
-// Firebase Presence System
-async function registerPresence(){
-  if(!currentRoom||!currentUser)return;
-  
-  // Reference to this user's presence in the room
-  presenceRef=db.ref(`/rooms/${currentRoom}/participants/${currentUser.uid}`);
-  
-  // Set user data
-  const userData={
-    uid:currentUser.uid,
-    name:userProfile?.name||currentUser.displayName||'User',
-    email:userProfile?.email||currentUser.email||'',
-    photoURL:userProfile?.photoURL||currentUser.photoURL||'',
-    language:userLanguage,
-    micEnabled:prejoinMicEnabled,
-    camEnabled:prejoinCamEnabled,
-    joinedAt:firebase.database.ServerValue.TIMESTAMP,
-    lastSeen:firebase.database.ServerValue.TIMESTAMP
-  };
-  
-  await presenceRef.set(userData);
-  
-  // Remove presence on disconnect
-  presenceRef.onDisconnect().remove();
-  
-  // Update lastSeen periodically
-  setInterval(()=>{
-    if(presenceRef)presenceRef.child('lastSeen').set(firebase.database.ServerValue.TIMESTAMP);
-  },30000);
-  
-  console.log('Presence registered for room:',currentRoom);
-}
-
-function listenToParticipants(){
-  if(!currentRoom)return;
-  
-  participantsRef=db.ref(`/rooms/${currentRoom}/participants`);
-  
-  // Listen for new participants joining (presence tracking only - Stream handles video)
-  participantsRef.on('child_added',snap=>{
-    const p=snap.val();
-    if(!p||p.uid===currentUser.uid)return; // Skip self
-    console.log('👤 Firebase: Participant joined:',p.name);
-    // Don't add participant here - Stream handles it via updateStreamParticipants
-    showToast(`${p.name} joined the room`);
-  });
-  
-  // Listen for participants leaving
-  participantsRef.on('child_removed',snap=>{
-    const p=snap.val();
-    if(!p||p.uid===currentUser.uid)return;
-    console.log('👤 Firebase: Participant left:',p.name);
-    showToast(`${p.name} left the room`);
-    // Stream handles removal via participant updates
-  });
-  
-  // Listen for participant updates (hand raised indicator)
-  participantsRef.on('child_changed',snap=>{
-    const p=snap.val();
-    if(!p)return;
-    // Update hand raised indicator for all participants
-    updateHandIndicator(p.uid,p.handRaised);
-  });
-  
-  // Initialize chat listener
-  initChatListener();
-}
-
-// Update presence when mic/cam changes
-function updatePresenceStatus(){
-  if(!presenceRef)return;
-  const localP=participants.get(currentUser?.uid);
-  if(localP){
-    presenceRef.update({
-      micEnabled:localP.micEnabled,
-      camEnabled:localP.camEnabled,
-      lastSeen:firebase.database.ServerValue.TIMESTAMP
-    });
-  }
-}
-
-// Participants
-function addParticipant(p){participants.set(p.id,p);updateVideoGrid();updateStudentsList();$('participantCount').textContent=participants.size;$('studentsBadgeMenu').textContent=participants.size}
-function removeParticipant(id){participants.delete(id);updateVideoGrid();updateStudentsList();$('participantCount').textContent=participants.size;$('studentsBadgeMenu').textContent=participants.size}
-
-function updateVideoGrid(){
-  const grid=$('videoGrid');
-  grid.classList.add('auto-layout');
-  grid.innerHTML='';
-  const c=participants.size;
-  grid.dataset.count=Math.min(c,9);
-  participants.forEach((p,id)=>grid.appendChild(createVideoTile(p,id)));
-}
-
-function createVideoTile(p,id){
-  const t=document.createElement('div');t.className='video-tile'+(p.isLocal?' mirror':'')+(id===pinnedUserId?' pinned':'');t.dataset.id=id;t.dataset.user=id;
-  const ini=(p.name||'U').charAt(0).toUpperCase();
-  const hasPhoto=p.photoURL;
-  const showPlaceholder=p.camEnabled===false;
-  const placeholderContent=hasPhoto?`<img src="${p.photoURL}" style="width:100%;height:100%;border-radius:50%;object-fit:cover"/>`:`${ini}`;
-  const handHtml=p.handRaised?'<div class="video-tile-hand"><i class="fas fa-hand-paper"></i></div>':'';
-  t.innerHTML=`<video autoplay ${p.isLocal?'muted':''} playsinline style="display:${p.camEnabled!==false?'block':'none'}"></video><audio autoplay></audio><div class="video-placeholder" style="display:${showPlaceholder?'flex':'none'}">${placeholderContent}</div>${handHtml}<div class="video-tile-overlay"><div class="video-tile-top"><div class="video-tile-actions"><button class="video-tile-action btn-pin" title="Pin"><i class="fas fa-thumbtack"></i></button>${!p.isLocal?'<button class="video-tile-action" title="Mute"><i class="fas fa-microphone-slash"></i></button>':''}</div><div class="video-tile-status">${p.micEnabled===false?'<span class="muted"><i class="fas fa-microphone-slash"></i></span>':''}</div></div><div class="video-tile-bottom"><div class="video-tile-name"><span class="speaking" style="display:none"></span><span>${p.isLocal?'You':p.name}</span></div></div></div>`;
-  const v=t.querySelector('video');
-  const a=t.querySelector('audio');
-  
-  if(p.stream){
-    v.srcObject = p.stream;
-    v.style.display = 'block';
-    t.querySelector('.video-placeholder').style.display = 'none';
-    v.play().catch(e => console.log('Video play error:', e));
-  } else {
-    v.style.display = 'none';
-    t.querySelector('.video-placeholder').style.display = 'flex';
-  }
-
-  if(p.audioStream && !p.isLocal){
-    a.srcObject = p.audioStream;
-    applySpeakerToAudio(a);
-    a.play().catch(e => console.log('Audio play error:', e));
-  }
-  
-  t.querySelector('.btn-pin').addEventListener('click',()=>{pinnedUserId=pinnedUserId===id?null:id;updateVideoGrid()});
-  return t;
-}
-
-function applySpeakerToAudio(audioEl){
-  if(selectedSpeakerId && audioEl && typeof audioEl.setSinkId === 'function'){
-    audioEl.setSinkId(selectedSpeakerId).catch(()=>{});
-  }
-}
-
-function updateAudioOutputs(){
-  document.querySelectorAll('.video-tile audio').forEach(applySpeakerToAudio);
-}
-
-function updateStudentsList(){
-  const list=$('studentsList');list.innerHTML='';
-  participants.forEach((p,id)=>{
-    const ini=(p.name||'U').charAt(0).toUpperCase();
-    const avatarContent=p.photoURL?`<img src="${p.photoURL}" style="width:100%;height:100%;border-radius:50%;object-fit:cover"/>`:`${ini}`;
-    const item=document.createElement('div');item.className='student-item';
-    item.innerHTML=`<div class="student-avatar">${avatarContent}</div><div class="student-info"><h5>${p.isLocal?'You':p.name}</h5><p><i class="fas fa-circle online"></i> Online</p></div><div class="student-actions"><button class="student-action ${p.micEnabled===false?'muted':''}"><i class="fas fa-microphone${p.micEnabled===false?'-slash':''}"></i></button><button class="student-action"><i class="fas fa-thumbtack"></i></button></div>`;
-    list.appendChild(item);
-  });
-}
-
-// Transcription
-function startTranscription(){
-  if(isTranscribing)return;
-  if(sttProvider==='gemini') return startSpeechRecognition('Gemini');
-  if(sttProvider==='browser') return startSpeechRecognition('Browser');
-  return startOpenAITranscription();
-}
-
-function stopTranscription(){
-  isTranscribing=false;
-  $('btnTranscribe').classList.remove('active');
-  if(flushTimeout){clearTimeout(flushTimeout);flushTimeout=null}
-  if(sentenceBuffer){sendTranscript(sentenceBuffer);sentenceBuffer=''}
-  if(sttRecorder && sttRecorder.state!=='inactive'){
-    try{sttRecorder.stop()}catch{}
-  }
-  if(speechRecognition){
-    speechRecognition.onend=null;
-    speechRecognition.onerror=null;
-    try{speechRecognition.stop()}catch{}
-    speechRecognition=null;
-  }
-}
-
-function startOpenAITranscription(){
-  const key = localStorage.getItem('openai_api_key') || openaiKey;
-  if(!key){showToast('OpenAI key missing');return}
-
-  // Use Stream SDK audio if available (prevents conflict/echo)
-  let streamToRecord = localStream;
-  if (streamCall && streamCall.microphone && streamCall.microphone.state.mediaStream) {
-      console.log('🎙️ Using Stream SDK audio for transcription');
-      streamToRecord = streamCall.microphone.state.mediaStream;
-  }
-
-  if(!streamToRecord || !streamToRecord.active || streamToRecord.getAudioTracks().length === 0){
-    showToast('Microphone not active or permission denied');
-    console.error("Microphone stream not ready for transcription");
-    return;
-  }
-  isTranscribing=true;$('btnTranscribe').classList.add('active');sentenceBuffer='';
-  const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
-  try {
-    sttRecorder = new MediaRecorder(streamToRecord, { mimeType });
-    const chunks = [];
-    sttRecorder.ondataavailable = e => chunks.push(e.data);
-    sttRecorder.onstop = async () => {
-      const blob = new Blob(chunks, { type: mimeType });
-      if(blob.size > 1000) await sendToWhisper(blob, key);
-      if(isTranscribing) startOpenAITranscription();
-    };
-    sttRecorder.start();
-    setTimeout(()=>{if(sttRecorder && sttRecorder.state==='recording')sttRecorder.stop()},8000);
-  } catch(e) {
-    console.error("MediaRecorder failed:", e);
-    showToast("Failed to start recording: " + e.message);
-    isTranscribing=false;
-    $('btnTranscribe').classList.remove('active');
-  }
-}
-
-async function sendToWhisper(blob, key){
-  const formData = new FormData();
-  formData.append('file', blob, 'audio.webm');
-  formData.append('model', 'whisper-1');
-  formData.append('language', sourceLanguage || 'en');
-  try{
-    const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${key}` },
-      body: formData
-    });
-    if(!res.ok) throw new Error(await res.text());
-    const data = await res.json();
-    if(data.text) sendTranscript(data.text);
-  }catch(e){
-    console.error('Whisper error:', e);
-    showToast('Transcription failed');
-    stopTranscription();
-  }
-}
-
-function startSpeechRecognition(label){
-  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!Recognition){showToast(`${label} transcription not supported`);return}
-  isTranscribing=true;$('btnTranscribe').classList.add('active');sentenceBuffer='';
-  const recognition = new Recognition();
-  recognition.continuous = true;
-  recognition.interimResults = false;
-  recognition.lang = sourceLanguage || 'en';
-  recognition.onresult = (event) => {
-    for(let i=event.resultIndex;i<event.results.length;i++){
-      if(event.results[i].isFinal){
-        sendTranscript(event.results[i][0].transcript);
-      }
-    }
-  };
-  recognition.onerror = (event) => {
-    console.error(label + ' transcription error:', event);
-    showToast(label + ' transcription error');
-  };
-  recognition.onend = () => { if(isTranscribing) recognition.start(); };
-  recognition.start();
-  speechRecognition = recognition;
-  showToast(`${label} transcription active`);
-}
-
-async function sendTranscript(txt){if(!txt.trim())return;const eid=Date.now().toString();const transcriptData={id:eid,userId:currentUser.uid,userName:userProfile?.name||'User',originalText:txt,originalLang:sourceLanguage||'auto',timestamp:Date.now()};await db.ref(`/transcripts/${currentRoom}/${eid}`).set(transcriptData);quizTranscripts.push(transcriptData);if(quizTranscripts.length>50)quizTranscripts.shift()}
-
-// Listen Transcripts
-function listenToTranscripts(){
-  db.ref(`/transcripts/${currentRoom}`).orderByChild('timestamp').limitToLast(100).on('child_added',async snap=>{
-    const e=snap.val();let tran=e.originalText;try{tran=await googleTranslate(e.originalText,'auto',userLanguage)}catch(x){console.error('Trans:',x)}
-    addTranscriptEntry({...e,translation:tran});
-  });
-}
-
-function addTranscriptEntry(e){
-  const isNew=!processedIds.has(e.id);processedIds.add(e.id);
-  if(isNew){
-    quizTranscripts.push(e);
-    if(quizTranscripts.length>50)quizTranscripts.shift();
-    // Update quiz button state
-    const qBtn=$('btnQuiz');
-    if(quizTranscripts.length>=3){
-      qBtn.classList.add('ready');
-      qBtn.title=`Generate Quiz (${quizTranscripts.length} transcripts)`;
-    }
-  }
-  const isSelf=e.userId===currentUser?.uid,ini=(e.userName||'U').charAt(0).toUpperCase(),time=new Date(e.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-  const empty=$('transcriptEmpty');if(empty)empty.remove();
-  const unified=$('transcriptUnified'),el=document.createElement('div');el.className='transcript-entry';el.dataset.id=e.id;
-  el.innerHTML=`<div class="transcript-entry-header"><div class="transcript-entry-avatar">${ini}</div><span class="transcript-entry-name">${isSelf?'You':e.userName}</span><span class="transcript-entry-time">${time}</span></div><div class="transcript-entry-original">${e.originalText}</div><div class="transcript-entry-translation">${e.translation}</div><div class="transcript-entry-actions"><button class="btn-play-entry" data-text="${encodeURIComponent(e.translation)}"><i class="fas fa-volume-up"></i> Play</button></div>`;
-  unified.appendChild(el);unified.scrollTop=unified.scrollHeight;
-  const origCol=$('originalColumn'),transCol=$('translationColumn');
-  const ol=document.createElement('div');ol.className='transcript-line';ol.innerHTML=`<div class="transcript-line-header"><div class="transcript-line-avatar">${ini}</div><span class="transcript-line-name">${isSelf?'You':e.userName}</span><span class="transcript-line-time">${time}</span></div><div class="transcript-line-text">${e.originalText}</div>`;
-  origCol.appendChild(ol);origCol.scrollTop=origCol.scrollHeight;
-  const tl=document.createElement('div');tl.className='transcript-line';tl.innerHTML=`<div class="transcript-line-header"><div class="transcript-line-avatar">${ini}</div><span class="transcript-line-name">${isSelf?'You':e.userName}</span><span class="transcript-line-time">${time}</span></div><div class="transcript-line-text">${e.translation}</div>`;
-  transCol.appendChild(tl);transCol.scrollTop=transCol.scrollHeight;
-  if(autoPlayTTS&&isNew)queueTTS({id:e.id,text:e.translation,lang:userLanguage});
-}
-
-// TTS
-function toggleAutoTTS(){autoPlayTTS=!autoPlayTTS;$('btnAutoTTS').classList.toggle('active',autoPlayTTS);$('btnAutoTTSMenu').classList.toggle('active',autoPlayTTS);$('toggleAutoTTS').classList.toggle('active',autoPlayTTS);if(autoPlayTTS)showToast('Auto-play enabled');else{ttsQueue=[];updateQueueBadge()}}
-$('btnAutoTTS').addEventListener('click',toggleAutoTTS);$('btnAutoTTSMenu').addEventListener('click',()=>{toggleAutoTTS();$('headerMenu').classList.remove('active')});$('toggleAutoTTS').addEventListener('click',toggleAutoTTS);
-
-function queueTTS(i){ttsQueue.push(i);updateQueueBadge();processTTSQueue()}
-function updateQueueBadge(){const b=$('ttsQueueBadge');b.textContent=ttsQueue.length;b.classList.toggle('show',ttsQueue.length>0)}
-
-async function processTTSQueue(){
-  if(isPlayingTTS||ttsQueue.length===0)return;isPlayingTTS=true;const i=ttsQueue.shift();updateQueueBadge();
-  const btn=document.querySelector(`.transcript-entry[data-id="${i.id}"] .btn-play-entry`);if(btn)btn.classList.add('playing');
-  try{await playTTSAudio(i.text,i.lang)}catch(e){console.error('TTS:',e)}
-  if(btn)btn.classList.remove('playing');isPlayingTTS=false;if(ttsQueue.length>0)processTTSQueue();
-}
-
-async function playTTSAudio(txt,lang){
-  return new Promise(async(res,rej)=>{
-    const vid=getVoice(lang);
-    try{
-      const r=await fetch('https://api.cartesia.ai/tts/bytes',{method:'POST',headers:{'Cartesia-Version':'2025-04-16','X-API-Key':roomConfig.cartesiaKey,'Content-Type':'application/json'},body:JSON.stringify({transcript:txt,model_id:roomConfig.cartesiaModelId||'sonic-3',voice:{mode:'id',id:vid},output_format:{container:'wav',encoding:'pcm_f32le',sample_rate:44100}})});
-      if(!r.ok)throw new Error(`TTS ${r.status}`);const blob=await r.blob(),url=URL.createObjectURL(blob);
-      if(currentAudio){currentAudio.pause();currentAudio=null}const a=new Audio(url);currentAudio=a;
-      if(selectedSpeakerId&&a.setSinkId)try{await a.setSinkId(selectedSpeakerId)}catch{}
-      a.onended=()=>{currentAudio=null;URL.revokeObjectURL(url);res()};a.onerror=e=>{currentAudio=null;URL.revokeObjectURL(url);rej(e)};await a.play();
-    }catch(e){rej(e)}
-  });
-}
-
-document.addEventListener('click',e=>{const b=e.target.closest('.btn-play-entry');if(b){const t=decodeURIComponent(b.dataset.text);b.classList.add('playing');playTTSAudio(t,userLanguage).finally(()=>b.classList.remove('playing'))}});
-
-async function googleTranslate(t,sl='auto',tl='en'){const q=encodeURIComponent(t),r=await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${q}`);if(!r.ok)throw new Error(`Trans ${r.status}`);const d=await r.json();return(d?.[0]||[]).filter(x=>Array.isArray(x)&&typeof x[0]==='string').map(x=>x[0]).join('').trim()}
-
-// Orbit Quiz System
-function generateOrbitQuizId(){
-  // Generate orbit-style quiz ID (8 chars: 4 letters + 4 numbers)
-  const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const numbers='0123456789';
-  let orbitId='';
-  for(let i=0;i<4;i++)orbitId+=letters.charAt(Math.floor(Math.random()*letters.length));
-  for(let i=0;i<4;i++)orbitId+=numbers.charAt(Math.floor(Math.random()*numbers.length));
-  return orbitId;
-}
-
-async function generateQuizFromDiscussion(){
-  console.log('Quiz generation started');
-  console.log('Transcript count:', quizTranscripts.length);
-  console.log('Current room:', currentRoom);
-  console.log('Current user:', currentUser?.uid);
-  
-  // If not enough transcripts, show sample quiz option
-  if(quizTranscripts.length < 3){
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3><i class="fas fa-info-circle"></i> Quiz Options</h3>
-          <button class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p><strong>Need more discussion for AI quiz generation</strong></p>
-          <p>Minimum 3 messages required. Current count: ${quizTranscripts.length}</p>
-          <hr style="margin: 20px 0; border: 1px solid var(--border);">
-          <p><strong>Try the sample quiz instead:</strong></p>
-          <p>Construction Safety Fundamentals - 10 questions about workplace safety</p>
-        </div>
-        <div class="modal-actions">
-          <button class="btn-primary" onclick="openSampleQuiz(); closeQuizModal();">Open Sample Quiz</button>
-          <button class="btn-secondary" onclick="closeQuizModal()">Cancel</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    modal.querySelector('.modal-close').addEventListener('click', () => closeQuizModal());
-    return;
-  }
-  
-  if(!currentRoom){
-    showToast('Must be in a room to generate quiz');
-    return;
-  }
-  
-  $('btnQuiz').innerHTML='<i class="fas fa-spinner fa-spin"></i>';
-  $('btnQuiz').disabled=true;
-  
-  try{
-    // Prepare discussion summary
-    const discussion=quizTranscripts.map(t=>`${t.userName}: ${t.originalText}`).join('\n');
-    console.log('Discussion summary:', discussion.substring(0, 200) + '...');
-    
-    const systemPrompt=`You are an educational AI that creates quiz questions based on class discussions. 
-Analyze the following class discussion and create exactly 10 multiple-choice questions that test understanding of the key concepts discussed.
-
-For each question, provide:
-1. Question text
-2. Four answer options (A, B, C, D)
-3. Correct answer letter
-4. Brief explanation
-
-Format as JSON array: [{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correct":"A","explanation":"..."}]`;
-    
-    const response=await fetch('https://api.cerebras.ai/v1/chat/completions',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':`Bearer ${CEREBRAS_API_KEY}`
-      },
-      body:JSON.stringify({
-        model:'llama-3.3-70b',
-        max_completion_tokens:2048,
-        temperature:0.2,
-        top_p:1,
-        stream:false,
-        messages:[
-          {role:'system',content:systemPrompt},
-          {role:'user',content:`Class Discussion:\n${discussion}\n\nCreate 10 quiz questions based on this discussion.`}
-        ]
-      })
-    });
-    
-    if(!response.ok){
-      const errorText = await response.text();
-      console.error('Cerebras API error:', response.status, errorText);
-      throw new Error(`Cerebras API error: ${response.status} - ${errorText}`);
-    }
-    
-    const data=await response.json();
-    const quizContent=data.choices[0].message.content;
-    console.log('AI response:', quizContent.substring(0, 200) + '...');
-    
-    // Generate quiz link
-    const orbitId=generateOrbitQuizId();
-    const basePath = location.pathname.endsWith('/') ? location.pathname : location.pathname.replace(/\/[^/]*$/, '/');
-    quizLink=`${location.origin}${basePath}quiz.html?quiz=${orbitId}&room=${currentRoom}`;
-    
-    console.log('Generated quiz:', {orbitId, quizLink, currentRoom});
-    
-    // Store quiz in Firebase
-    await db.ref(`/quizzes/${orbitId}`).set({
-      roomId:currentRoom,
-      questions:quizContent,
-      createdBy:currentUser.uid,
-      createdAt:Date.now(),
-      discussion:discussion.substring(0,5000) // Limit size
-    });
-    
-    console.log('Quiz saved to Firebase:', orbitId);
-    
-    // Show quiz link
-    showQuizLinkModal(orbitId);
-    
-  }catch(e){
-    console.error('Quiz generation error:',e);
-    showToast(`Quiz generation failed: ${e.message}`);
-  }
-  
-  $('btnQuiz').innerHTML='<i class="fas fa-question-circle"></i>';
-  $('btnQuiz').disabled=false;
-}
-
-function showQuizLinkModal(orbitId){
-  const modal=document.createElement('div');
-  modal.className='modal-overlay';
-  modal.innerHTML=`
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3><i class="fas fa-question-circle"></i> Quiz Generated</h3>
-        <button class="modal-close">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p>Automated quiz created from class discussion!</p>
-        <div class="quiz-link-container">
-          <label>Quiz Link (Orbit ID: ${orbitId})</label>
-          <div class="link-input-group">
-            <input type="text" value="${quizLink}" readonly id="quizLinkInput"/>
-            <button class="btn-copy" onclick="copyQuizLink()">Copy</button>
-          </div>
-        </div>
-        <p class="quiz-info">Share this link with students to take the AI-generated quiz based on today's discussion.</p>
-        <hr style="margin: 20px 0; border: 1px solid var(--border);">
-        <p style="margin-bottom: 12px;"><strong>Or try the sample quiz:</strong></p>
-        <div class="link-input-group">
-          <input type="text" value="${location.origin}${location.pathname.replace('index.html', 'quiz.html')}?quiz=sample" readonly/>
-          <button class="btn-copy" onclick="openSampleQuiz()">Open Sample</button>
-        </div>
-        <p class="quiz-info">Construction Safety quiz for testing the quiz system.</p>
-      </div>
-      <div class="modal-actions">
-        <button class="btn-primary" onclick="openQuizPreview()">Preview Quiz</button>
-        <button class="btn-secondary" onclick="closeQuizModal()">Close</button>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-  modal.querySelector('.modal-close').addEventListener('click',()=>closeQuizModal());
-}
-
-function copyQuizLink(){
-  const input=$('quizLinkInput');
-  input.select();
-  document.execCommand('copy');
-  showToast('Quiz link copied!');
-}
-
-function openQuizPreview(){
-  window.open(quizLink,'_blank');
-}
-
-function openSampleQuiz(){
-  const sampleUrl = `${location.origin}${location.pathname.replace('index.html', 'quiz.html')}?quiz=sample`;
-  window.open(sampleUrl, '_blank');
-}
-
-function closeQuizModal(){
-  document.querySelector('.modal-overlay')?.remove();
-}
-
-// Controls
-$('btnMic').addEventListener('click',()=>{
-  if(!localStream)return;
-  const t=localStream.getAudioTracks()[0];
-  if(t){
-    t.enabled=!t.enabled;
-    $('btnMic').classList.toggle('muted',!t.enabled);
-    $('btnMic').querySelector('i').className=`fas fa-microphone${t.enabled?'':'-slash'}`;
-    const p=participants.get(currentUser.uid);
-    if(p){p.micEnabled=t.enabled;updateVideoGrid();updateStudentsList();updatePresenceStatus()}
-    if(streamCall){
-      try{
-        if(t.enabled) streamCall.microphone.enable();
-        else streamCall.microphone.disable();
-      }catch(e){console.log('Stream mic toggle:',e)}
-    }
-  }
-});
-$('btnCamera').addEventListener('click',()=>{
-  if(!localStream)return;
-  const t=localStream.getVideoTracks()[0];
-  if(t){
-    t.enabled=!t.enabled;
-    $('btnCamera').classList.toggle('muted',!t.enabled);
-    $('btnCamera').querySelector('i').className=`fas fa-video${t.enabled?'':'-slash'}`;
-    const p=participants.get(currentUser.uid);
-    if(p){p.camEnabled=t.enabled;updateVideoGrid();updatePresenceStatus()}
-    if(streamCall){
-      try{
-        if(t.enabled) streamCall.camera.enable();
-        else streamCall.camera.disable();
-      }catch(e){console.log('Stream cam toggle:',e)}
-    }
-  }
-});
-
-$('btnRecord').addEventListener('click',()=>{if(isRecording)stopRecording();else startRecording()});
-$('btnQuiz').addEventListener('click',generateQuizFromDiscussion);
-
-function startRecording(){
-  if(!localStream){showToast('Camera/mic not available');return}
-  try{
-    recordedChunks=[];const options={mimeType:'video/webm;codecs=vp9,opus'};
-    if(!MediaRecorder.isTypeSupported(options.mimeType))options.mimeType='video/webm';
-    if(!MediaRecorder.isTypeSupported(options.mimeType))options.mimeType='video/mp4';
-    mediaRecorder=new MediaRecorder(localStream,options);
-    mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recordedChunks.push(e.data)};
-    mediaRecorder.onstop=()=>{
-      const blob=new Blob(recordedChunks,{type:'video/webm'});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
-      a.style.display='none';
-      a.href=url;
-      const timestamp=new Date().toISOString().replace(/[:.]/g,'-').slice(0,-5);
-      a.download=`SuccessClass-${currentRoom}-${timestamp}.webm`;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url)},100);
-      showToast('Recording saved to downloads');
-      recordedChunks=[];
-    };
-    mediaRecorder.start(1000);
-    isRecording=true;
-    $('btnRecord').classList.add('active');
-    $('meetingTimer').classList.add('recording');
-    showToast('Recording started');
-  }catch(e){console.error('Record:',e);showToast('Recording failed')}
-}
-
-function stopRecording(){
-  if(!mediaRecorder||!isRecording)return;
-  mediaRecorder.stop();
-  isRecording=false;
-  $('btnRecord').classList.remove('active');
-  $('meetingTimer').classList.remove('recording');
-}
-
-$('btnScreenShare').addEventListener('click',async()=>{
-  if(screenStream){screenStream.getTracks().forEach(t=>t.stop());screenStream=null;$('sharedContent').classList.remove('active');$('btnScreenShare').classList.remove('active');return}
-  try{screenStream=await navigator.mediaDevices.getDisplayMedia({video:true});$('screenShareVideo').srcObject=screenStream;$('whiteboardCanvas').style.display='none';$('screenShareVideo').style.display='block';$('whiteboardTools').style.display='none';$('sharedContentTitle').textContent='Screen Share';$('sharedContent').classList.add('active');$('btnScreenShare').classList.add('active');screenStream.getVideoTracks()[0].onended=()=>{screenStream=null;$('sharedContent').classList.remove('active');$('btnScreenShare').classList.remove('active')}}catch(e){console.error('Screen:',e)}
-});
-
-$('btnWhiteboard').addEventListener('click',()=>{isWhiteboardActive=!isWhiteboardActive;$('btnWhiteboard').classList.toggle('active',isWhiteboardActive);if(isWhiteboardActive){$('screenShareVideo').style.display='none';$('whiteboardCanvas').style.display='block';$('whiteboardTools').style.display='flex';$('sharedContentTitle').textContent='Whiteboard';$('sharedContent').classList.add('active');initWhiteboard()}else{$('sharedContent').classList.remove('active')}});
-$('btnStopSharing').addEventListener('click',()=>{if(screenStream){screenStream.getTracks().forEach(t=>t.stop());screenStream=null}isWhiteboardActive=false;$('sharedContent').classList.remove('active');$('btnScreenShare').classList.remove('active');$('btnWhiteboard').classList.remove('active')});
-
-function initWhiteboard(){const c=$('whiteboardCanvas');whiteboardCtx=c.getContext('2d');whiteboardCtx.fillStyle='#fff';whiteboardCtx.fillRect(0,0,c.width,c.height);whiteboardCtx.lineCap='round';whiteboardCtx.lineJoin='round';whiteboardCtx.lineWidth=3;whiteboardCtx.strokeStyle='#000';c.onmousedown=c.ontouchstart=e=>{isDrawing=true;const r=c.getBoundingClientRect(),x=(e.touches?e.touches[0].clientX:e.clientX)-r.left,y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;whiteboardCtx.beginPath();whiteboardCtx.moveTo(x*(c.width/r.width),y*(c.height/r.height))};c.onmousemove=c.ontouchmove=e=>{if(!isDrawing)return;e.preventDefault();const r=c.getBoundingClientRect(),x=(e.touches?e.touches[0].clientX:e.clientX)-r.left,y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;if(whiteboardTool==='eraser'){whiteboardCtx.strokeStyle='#fff';whiteboardCtx.lineWidth=20}else{whiteboardCtx.strokeStyle=$('whiteboardColor').value;whiteboardCtx.lineWidth=3}whiteboardCtx.lineTo(x*(c.width/r.width),y*(c.height/r.height));whiteboardCtx.stroke()};c.onmouseup=c.ontouchend=()=>{isDrawing=false};c.onmouseleave=()=>{isDrawing=false};c.onmouseout=()=>{isDrawing=false};c.onmouseout=()=>{isDrawing=false}}
-document.querySelectorAll('.whiteboard-tool[data-tool]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.whiteboard-tool[data-tool]').forEach(x=>x.classList.remove('active'));b.classList.add('active');whiteboardTool=b.dataset.tool}));
-$('btnClearBoard').addEventListener('click',()=>{if(whiteboardCtx){const c=$('whiteboardCanvas');whiteboardCtx.fillStyle='#fff';whiteboardCtx.fillRect(0,0,c.width,c.height)}});
-
-// Panels
-function isMobileOrTablet(){return window.innerWidth <= 1024 && window.matchMedia('(orientation: portrait)').matches}
-
-$('btnStudentsMenu').addEventListener('click',()=>{$('studentsPanel').classList.toggle('open');$('transcriptPanel').classList.remove('open');$('chatPanel').classList.remove('open');$('headerMenu').classList.remove('active')});
-$('btnCloseStudents').addEventListener('click',()=>$('studentsPanel').classList.remove('open'));
-
-// Chat Panel
-let unreadChatCount=0;
-$('btnChat').addEventListener('click',()=>{$('chatPanel').classList.toggle('open');$('studentsPanel').classList.remove('open');$('transcriptPanel').classList.remove('open');unreadChatCount=0;updateChatBadge()});
-$('btnChatMenu').addEventListener('click',()=>{$('chatPanel').classList.toggle('open');$('studentsPanel').classList.remove('open');$('transcriptPanel').classList.remove('open');$('headerMenu').classList.remove('active');unreadChatCount=0;updateChatBadge()});
-$('btnCloseChat').addEventListener('click',()=>$('chatPanel').classList.remove('open'));
-
-function updateChatBadge(){const b=$('chatBadgeMenu');if(unreadChatCount>0){b.textContent=unreadChatCount;b.style.display='inline'}else{b.style.display='none'}}
-
-$('btnSendChat').addEventListener('click',sendChatMessage);
-$('chatInput').addEventListener('keypress',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage()}});
-
-function sendChatMessage(){
-  const input=$('chatInput');const msg=input.value.trim();if(!msg||!currentRoom)return;
-  db.ref(`/chats/${currentRoom}`).push({userId:currentUser.uid,name:currentUser.displayName||'User',message:msg,timestamp:Date.now()});
-  input.value='';
-}
-
-function initChatListener(){
-  if(!currentRoom)return;
-  db.ref(`/chats/${currentRoom}`).orderByChild('timestamp').limitToLast(100).on('child_added',snap=>{
-    const m=snap.val();if(!m)return;
-    $('chatEmpty').style.display='none';
-    const div=document.createElement('div');
-    div.className='chat-message '+(m.userId===currentUser.uid?'sent':'received');
-    const time=new Date(m.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    div.innerHTML=m.userId!==currentUser.uid?`<div class="chat-message-header"><span class="sender">${m.name}</span><span class="time">${time}</span></div>${escapeHtml(m.message)}`:`${escapeHtml(m.message)}`;
-    $('chatMessages').appendChild(div);
-    $('chatMessages').scrollTop=$('chatMessages').scrollHeight;
-    if(m.userId!==currentUser.uid&&!$('chatPanel').classList.contains('open')){unreadChatCount++;updateChatBadge()}
-  });
-}
-function escapeHtml(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
-
-// Raise Hand
-let handRaised=false;
-$('btnRaiseHand').addEventListener('click',toggleRaiseHand);
-
-function toggleRaiseHand(){
-  handRaised=!handRaised;
-  $('btnRaiseHand').classList.toggle('hand-raised',handRaised);
-  if(currentRoom&&currentUser){
-    db.ref(`/rooms/${currentRoom}/participants/${currentUser.uid}/handRaised`).set(handRaised);
-  }
-  showToast(handRaised?'Hand raised':'Hand lowered');
-}
-
-function updateHandIndicator(userId,raised){
-  const tile=document.querySelector(`.video-tile[data-user="${userId}"]`);
-  if(!tile)return;
-  let indicator=tile.querySelector('.video-tile-hand');
-  if(raised&&!indicator){
-    indicator=document.createElement('div');
-    indicator.className='video-tile-hand';
-    indicator.innerHTML='<i class="fas fa-hand-paper"></i>';
-    tile.appendChild(indicator);
-  }else if(!raised&&indicator){
-    indicator.remove();
-  }
-}
-
-// Transcript toggle - on mobile portrait, default to split view
-$('btnTranscript').addEventListener('click',()=>{
-  const panel=$('transcriptPanel');
-  const isOpening=!panel.classList.contains('open');
-  panel.classList.toggle('open');
-  $('studentsPanel').classList.remove('open');
-  // On mobile/tablet portrait, auto-switch to split view for side-by-side
-  if(isOpening && isMobileOrTablet()){
-    document.querySelectorAll('.transcript-view-toggle button').forEach(x=>x.classList.remove('active'));
-    document.querySelector('.transcript-view-toggle button[data-view="split"]').classList.add('active');
-    $('transcriptUnified').classList.add('hidden');
-    $('transcriptSplit').classList.add('active');
-  }
-});
-
-// Also link the Caption button in control bar to transcript panel
-$('btnTranscribe').addEventListener('click',()=>{
-  // Toggle transcription AND show transcript panel on mobile
-  if(isMobileOrTablet()){
-    const panel=$('transcriptPanel');
-    if(!panel.classList.contains('open')){
-      panel.classList.add('open');
-      // Auto-switch to split view
-      document.querySelectorAll('.transcript-view-toggle button').forEach(x=>x.classList.remove('active'));
-      document.querySelector('.transcript-view-toggle button[data-view="split"]').classList.add('active');
-      $('transcriptUnified').classList.add('hidden');
-      $('transcriptSplit').classList.add('active');
-    }
-  }
-  if(isTranscribing)stopTranscription();else startTranscription();
-},{capture:true});
-
-$('btnCloseTranscript').addEventListener('click',()=>$('transcriptPanel').classList.remove('open'));
-$('btnExpandTranscript').addEventListener('click',()=>{$('transcriptPanel').classList.toggle('expanded');$('btnExpandTranscript').innerHTML=`<i class="fas fa-${$('transcriptPanel').classList.contains('expanded')?'compress':'expand'}-alt"></i>`});
-document.querySelectorAll('.transcript-view-toggle button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.transcript-view-toggle button').forEach(x=>x.classList.remove('active'));b.classList.add('active');if(b.dataset.view==='unified'){$('transcriptUnified').classList.remove('hidden');$('transcriptSplit').classList.remove('active')}else{$('transcriptUnified').classList.add('hidden');$('transcriptSplit').classList.add('active')}}));
-
-// Header Menu Toggle
-$('btnHeaderMenu').addEventListener('click',e=>{
-  e.stopPropagation();
-  $('headerMenu').classList.toggle('active');
-});
-document.addEventListener('click',e=>{if(!e.target.closest('.header-menu-container'))$('headerMenu').classList.remove('active')});
-
-// Share Button Listener
-$('btnShareRoom').addEventListener('click', () => {
-  const link = `${window.location.origin}/join-original.html?room=${currentRoom}`;
-  navigator.clipboard.writeText(link).then(() => {
-    showToast('Invite link copied to clipboard!');
-  }).catch(err => {
-    console.error('Failed to copy:', err);
-    showToast('Failed to copy link');
-  });
-  $('headerMenu').classList.remove('active');
-});
-
-// PiP Mode
-$('btnPiPMenu').addEventListener('click',async()=>{$('headerMenu').classList.remove('active');const vids=document.querySelectorAll('.video-tile video');if(vids.length>0&&document.pictureInPictureEnabled){try{await vids[0].requestPictureInPicture();showToast('Picture-in-Picture enabled')}catch(e){showToast('PiP not available')}}});
-
-// Settings
-$('btnSettingsMenu').addEventListener('click',()=>{$('settingsOverlay').classList.add('open');$('headerMenu').classList.remove('active')});
-$('btnCloseSettings').addEventListener('click',()=>$('settingsOverlay').classList.remove('open'));
-document.querySelectorAll('.settings-tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.settings-tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.settings-section').forEach(s=>s.classList.remove('active'));t.classList.add('active');document.querySelector(`.settings-section[data-section="${t.dataset.tab}"]`).classList.add('active')}));
-document.querySelectorAll('.toggle-switch').forEach(t=>{if(t.id==='toggleAutoTTS')return;t.addEventListener('click',()=>t.classList.toggle('active'))});
-$('btnSaveSettings').addEventListener('click',async()=>{
-  userLanguage=$('settingsLanguageSelect').value;
-  await db.ref(`/users/${currentUser.uid}/language`).set(userLanguage);
-  const nm=$('settingsMicSelect').value,nc=$('settingsCamSelect').value;
-  selectedSpeakerId=$('settingsSpeakerSelect').value;
-  updateAudioOutputs();
-  if(nm!==selectedMicId||nc!==selectedCamId){
-    selectedMicId=nm;selectedCamId=nc;
-    if(localStream){
-      localStream.getTracks().forEach(t=>t.stop());
-      try{
-        localStream=await navigator.mediaDevices.getUserMedia({
-          video:selectedCamId?{deviceId:{exact:selectedCamId}}:true,
-          audio:{
-            deviceId:selectedMicId?{exact:selectedMicId}:undefined,
-            echoCancellation:$('toggleEcho').classList.contains('active'),
-            noiseSuppression:$('toggleNoise').classList.contains('active'),
-            autoGainControl:$('toggleGain').classList.contains('active')
-          }
+        // Initialize the SDK when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.videoCallSDK = new MessengerVideoCallSDK();
         });
-        const p=participants.get(currentUser.uid);
-        if(p){p.stream=localStream;updateVideoGrid()}
-        if(isTranscribing){stopTranscription();startTranscription()}
-      }catch(e){console.error('Dev:',e)}
-    }
-  }
-  $('settingsOverlay').classList.remove('open');
-  showToast('Settings saved');
-});
-
-// Leave
-$('btnLeave').addEventListener('click',leaveRoom);$('btnLeaveHeader').addEventListener('click',leaveRoom);
-function leaveRoom(){
-  // Clean up Stream video call
-  leaveStreamCall();
-  
-  // Clean up presence
-  if(presenceRef){presenceRef.remove();presenceRef=null}
-  if(participantsRef){participantsRef.off();participantsRef=null}
-  
-  // Clean up chat listener
-  if(currentRoom)db.ref(`/chats/${currentRoom}`).off();
-  
-  stopTranscription();if(localStream)localStream.getTracks().forEach(t=>t.stop());if(screenStream)screenStream.getTracks().forEach(t=>t.stop());if(currentAudio){currentAudio.pause();currentAudio=null}if(meetingTimerInterval)clearInterval(meetingTimerInterval);db.ref(`/transcripts/${currentRoom}`).off();ttsQueue=[];isPlayingTTS=false;processedIds.clear();autoPlayTTS=false;participants.clear();pinnedUserId=null;handRaised=false;$('btnRaiseHand').classList.remove('hand-raised');unreadChatCount=0;updateChatBadge();currentRoom=null;roomConfig=null;localStream=null;screenStream=null;$('appContainer').classList.remove('active');$('videoGrid').innerHTML='';$('transcriptUnified').innerHTML='<div class="transcript-empty" id="transcriptEmpty"><i class="fas fa-language"></i><p>Transcripts appear here as participants speak</p></div>';$('originalColumn').innerHTML='';$('translationColumn').innerHTML='';$('studentsList').innerHTML='';$('chatMessages').innerHTML='<div class="chat-empty" id="chatEmpty"><i class="fas fa-comments"></i><p>No messages yet.<br>Start the conversation!</p></div>';$('studentsPanel').classList.remove('open');$('transcriptPanel').classList.remove('open');$('chatPanel').classList.remove('open');$('sharedContent').classList.remove('active');history.replaceState({},'',location.pathname);window.location.href='join.html'
-}
-
-window.addEventListener('resize',()=>{if(window.innerWidth<=768){$('studentsPanel').classList.remove('open');$('transcriptPanel').classList.remove('open')}});
-
-/*
-// Register Service Worker
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('/run/service-worker.js')
-      .then(reg=>console.log('ServiceWorker registered:',reg.scope))
-      .catch(err=>console.log('ServiceWorker registration failed:',err));
-  });
-}
-
-// PWA Install Prompt
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt',e=>{
-  e.preventDefault();
-  deferredPrompt=e;
-  // Optionally show custom install button
-  console.log('PWA install available');
-});
-
-window.addEventListener('appinstalled',()=>{
-  console.log('PWA installed successfully');
-  deferredPrompt=null;
-});
-*/
-</script>
+    </script>
 </body>
 </html>
